@@ -25,6 +25,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite Item_message_gamepad;
     [SerializeField] Sprite ItemSlot_none_Img;
     [SerializeField] Sprite ItemSlot_handGun_Img;
+    [SerializeField] Sprite ItemSlot_machineGun_Img;
     [SerializeField] Sprite ItemSlot_knife_Img;
 
     //移動速度
@@ -89,16 +90,19 @@ public class PlayerController : MonoBehaviour
     {
         none,
         handGun,
+        machineGun,
         knife,
         herb,
     }
 
-    //アイテムスロットの数
+    //アイテムスロットの数（最初は３）
     [SerializeField]int itemSlotNum = 3;
     //選択中のスロット
     int nowSlot;
     //アイテムスロット
     Item[] itemSlot;
+    //スロットの上限数
+    private int MaxSlotNum = 7;
 
     //所持しているアイテムは銃か
     bool Item_equal_gun = false;
@@ -109,6 +113,7 @@ public class PlayerController : MonoBehaviour
     /*アイテムプレハブ*/
     [SerializeField] GameObject handGunPrefab;
     [SerializeField] GameObject knifePrefab;
+    [SerializeField] GameObject machineGunPrefab;
 
 
     // Start is called before the first frame update
@@ -123,8 +128,7 @@ public class PlayerController : MonoBehaviour
         _Get_ItemAction = _playerInput.actions[_Get_ItemActionName];
 
         //アイテムスロット作成
-        itemSlot = new Item[itemSlotNum];
-        //Array.Resize(ref itemSlot, 4);←こんな感じでスロットの容量変えられる
+        itemSlot = new Item[MaxSlotNum];
         nowSlot = 0;
         //アイテムスロット初期化
         for (int i = 0; i < itemSlotNum; i++)
@@ -184,6 +188,8 @@ public class PlayerController : MonoBehaviour
                 case 2: NowItemSlot = ItemSlot3; break;
                 case 3: NowItemSlot = ItemSlot4; break;
                 case 4: NowItemSlot = ItemSlot5; break;
+                case 5: NowItemSlot = ItemSlot6; break;
+                case 6: NowItemSlot = ItemSlot7; break;
             }
             NowItemSlot.transform.localScale = new Vector3(40, 40, 40);
             selectSlotSE.Play();
@@ -197,12 +203,31 @@ public class PlayerController : MonoBehaviour
         if (_Get_ItemAction.WasPressedThisFrame())
         {
             SpriteRenderer nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
-            //現在選択中のスロットに何もアイテムがない時
-            if (itemSlot[nowSlot] == Item.none)
+            //アイテムに接触していたら
+            if (itemTrigger)
             {
-               
-                //アイテムに接触していたら
-                if (itemTrigger)
+                //スロット数が上限に達していない
+                if (itemSlotNum < MaxSlotNum)
+                {
+                    //接触しているアイテムが鞄ならアイテムスロットを増やす
+                    if (triggerItem.name.Contains("bag"))
+                    {
+                        itemSlotNum++;
+                        switch (itemSlotNum)
+                        {
+                            case 4: ItemSlot4.SetActive(true); break;
+                            case 5: ItemSlot5.SetActive(true); break;
+                            case 6: ItemSlot6.SetActive(true); break;
+                            case 7: ItemSlot7.SetActive(true); break;
+                        }
+                        //接触しているアイテムを消す
+                        Destroy(triggerItem);
+                        getSE.Play();
+                    }
+                }
+
+                //現在選択中のスロットに何もアイテムがない時
+                if (itemSlot[nowSlot] == Item.none)
                 {             
                     //接触しているアイテムを現在のスロットにぶち込む
                     if (triggerItem.name.Contains("handGun"))
@@ -215,6 +240,12 @@ public class PlayerController : MonoBehaviour
                         itemSlot[nowSlot] = Item.knife;
                         nowSlotImg.sprite = ItemSlot_knife_Img;
                     }
+                    if (triggerItem.name.Contains("machineGun"))
+                    {
+                        itemSlot[nowSlot] = Item.machineGun;
+                        nowSlotImg.sprite = ItemSlot_machineGun_Img;
+                    }
+
                     //接触しているアイテムを消す
                     Destroy(triggerItem);
                     getSE.Play();
@@ -229,11 +260,14 @@ public class PlayerController : MonoBehaviour
                 }
                 if (itemSlot[nowSlot] == Item.knife)
                 {
-                    GameObject handGun = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0,0, rb.rotation));
+                    GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0,0, rb.rotation));
                 }
-                if (itemSlot[nowSlot] != Item.none)
-                    //現在選択中のスロットを空にする
-                    itemSlot[nowSlot] = Item.none;
+                if (itemSlot[nowSlot] == Item.machineGun)
+                {
+                    GameObject machineGun = Instantiate(machineGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-90));
+                }
+                //現在選択中のスロットを空にする
+                itemSlot[nowSlot] = Item.none;
                 nowSlotImg.sprite = ItemSlot_none_Img;
                 dropSE.Play();
             }
@@ -250,6 +284,16 @@ public class PlayerController : MonoBehaviour
             speed = 4.5f;
 
             intervaltime = 0.5f;
+            bulletSpeed = 1000;
+            bulletLostTime = 1f;
+            bulletPrefab = handGun_bulletPrefab;
+            Item_equal_gun = true;
+        }
+        if (itemSlot[nowSlot] == Item.machineGun)
+        {
+            speed = 4f;
+
+            intervaltime = 0.1f;
             bulletSpeed = 1000;
             bulletLostTime = 1f;
             bulletPrefab = handGun_bulletPrefab;
@@ -393,12 +437,13 @@ public class PlayerController : MonoBehaviour
         if (collision.CompareTag("Item"))
         {
             itemTrigger = true;
+            triggerItem = collision.gameObject;
             //現在選択中のスロットに何もアイテムがない時
-            if (itemSlot[nowSlot] == Item.none)
+            //もしくは接触中のアイテムが鞄の時
+            if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag"))
             {
                 //アイテムを拾うメッセージ
                 Item_message.SetActive(true);
-                triggerItem = collision.gameObject;
             }
         }
     }
