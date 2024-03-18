@@ -159,7 +159,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
             look = localPlayerController.Vector2ToAngle(LookValue.Get<Vector2>());
         }
     }
-    void OnSeleOnSelect_Item(InputValue SelectValue)
+    void OnSelect_Item(InputValue SelectValue)
     {
         localPlayerController.OnSelect_Item(SelectValue);
     }
