@@ -7,11 +7,13 @@ using System.Collections.Generic;
 using static UnityEditor.Timeline.TimelinePlaybackControls;
 using System;
 using DG.Tweening;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
     //UI
     [SerializeField] GameObject Item_message;
+    [SerializeField] GameObject SlotMax_message;
     [SerializeField] GameObject ItemSlot1;
     [SerializeField] GameObject ItemSlot2;
     [SerializeField] GameObject ItemSlot3;
@@ -20,6 +22,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject ItemSlot6;
     [SerializeField] GameObject ItemSlot7;
     private GameObject NowItemSlot;
+    [SerializeField] Image HP_gauze;
 
     //画像
     [SerializeField] Sprite Item_message_mouse;
@@ -29,8 +32,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite ItemSlot_machineGun_Img;
     [SerializeField] Sprite ItemSlot_knife_Img;
 
+    //パーティクル
+    [SerializeField] ParticleSystem blood;
+
     //移動速度
     [SerializeField] float speed;
+    //HP
+    private int HP=100;
 
     private Rigidbody2D rb;
     private Transform tf;
@@ -63,6 +71,7 @@ public class PlayerController : MonoBehaviour
 
     //弾丸のプレハブ
     [SerializeField] GameObject handGun_bulletPrefab;
+    [SerializeField] GameObject machineGun_bulletPrefab;
     private GameObject bulletPrefab;
 
     //空のプレハブ
@@ -95,6 +104,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] AudioSource getSE;
     [SerializeField] AudioSource selectSlotSE;
     [SerializeField] AudioSource knifeSE;
+    [SerializeField] AudioSource damageSE;
 
     /*アイテム*/
     enum Item
@@ -148,6 +158,7 @@ public class PlayerController : MonoBehaviour
         }
 
         Item_message.SetActive(false);
+        SlotMax_message.SetActive(false);
         NowItemSlot = ItemSlot1;
     }
 
@@ -236,12 +247,13 @@ public class PlayerController : MonoBehaviour
             //アイテムに接触していたら
             if (itemTrigger)
             {
-                //スロット数が上限に達していない
-                if (itemSlotNum < MaxSlotNum)
+                //接触しているアイテムが鞄
+                if (triggerItem.name.Contains("bag"))
                 {
-                    //接触しているアイテムが鞄ならアイテムスロットを増やす
-                    if (triggerItem.name.Contains("bag"))
+                    //スロット数が上限に達していない
+                    if (itemSlotNum<MaxSlotNum)
                     {
+                        //スロットを増やす
                         itemSlotNum++;
                         switch (itemSlotNum)
                         {
@@ -256,8 +268,8 @@ public class PlayerController : MonoBehaviour
                     }
                 }
 
-                //現在選択中のスロットに何もアイテムがない時
-                if (itemSlot[nowSlot] == Item.none)
+                //現在選択中のスロットに何もアイテムがない時 かつ　接触アイテムが鞄じゃない
+                if (itemSlot[nowSlot] == Item.none&&!triggerItem.name.Contains("bag"))
                 {             
                     //接触しているアイテムを現在のスロットにぶち込む
                     if (triggerItem.name.Contains("handGun"))
@@ -301,8 +313,8 @@ public class PlayerController : MonoBehaviour
         }
         //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun
         //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
-        SlotProcess(Item.knife,5f,0.5f,1000,1f,handGun_bulletPrefab,hand_in_knife,false);
-        SlotProcess(Item.machineGun, 4f, 0.1f, 1000,1f, handGun_bulletPrefab, hand_in_machineGun,true);
+        SlotProcess(Item.knife,5f,0.5f,1000,1f,emptyPrefab,hand_in_knife,false);
+        SlotProcess(Item.machineGun, 4f, 0.1f, 1000,1f, machineGun_bulletPrefab, hand_in_machineGun,true);
         SlotProcess(Item.handGun, 4.5f, 0.5f,1000,1f, handGun_bulletPrefab, hand_in_handGun,true);
         SlotProcess(Item.none, 5f, 0.5f, 1000,1f, emptyPrefab, hand_in_empty,false);
 
@@ -398,7 +410,7 @@ public class PlayerController : MonoBehaviour
             if (Item_equal_gun)//アイテムが銃の場合
             {
                 Debug.Log(bulletPrefab.name);
-                GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
+                GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-90));
                 Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
                 // 弾速は自由に設定
@@ -450,9 +462,14 @@ public class PlayerController : MonoBehaviour
         {
             itemTrigger = true;
             triggerItem = collision.gameObject;
-            //現在選択中のスロットに何もアイテムがない時
-            //もしくは接触中のアイテムが鞄の時
-            if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag"))
+            //スロット数が上限に達していて接触中アイテムが鞄
+            if (itemSlotNum >= MaxSlotNum&&triggerItem.name.Contains("bag"))
+            {
+                SlotMax_message.SetActive(true);
+            }
+                //現在選択中のスロットに何もアイテムがない時
+                //もしくは接触中のアイテムが鞄の時
+               else if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag"))
             {
                 //アイテムを拾うメッセージ
                 Item_message.SetActive(true);
@@ -466,6 +483,7 @@ public class PlayerController : MonoBehaviour
             if (other.CompareTag("Item"))
             {
                 Item_message.SetActive(false);
+            SlotMax_message.SetActive(false);
                 itemTrigger = false;
             }
         }
@@ -480,4 +498,27 @@ public class PlayerController : MonoBehaviour
             var radian = angle * (Mathf.PI / 180);
             return new Vector2(Mathf.Cos(radian), Mathf.Sin(radian)).normalized;
         }
+
+    //ダメージ処理
+    public void Damage(int damageValue)
+    {
+        damageSE.Play();
+        HP -= damageValue;//hpを減らす
+
+        var sequence = DOTween.Sequence();
+        //fill amountを使うためにhpを0～1の値に変える
+        float max1_hpgauze = (float)HP / 100f;
+
+        //hpが0より大きいならその値までhpバーの画像を変化
+        if(HP > 0)
+        sequence.Append(HP_gauze.DOFillAmount(max1_hpgauze, 0.3f));
+        else//0以下なら0にする
+            sequence.Append(HP_gauze.DOFillAmount(0, 0.3f));
+
+        gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.15f).OnComplete(() =>
+        {
+            gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);
+            blood.Play();
+        });
+    }
 }
