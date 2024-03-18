@@ -1733,7 +1733,6 @@ GameObject:
   - component: {fileID: 1544084013}
   - component: {fileID: 1544084012}
   - component: {fileID: 1544084011}
-  - component: {fileID: 1544084010}
   - component: {fileID: 1544084009}
   - component: {fileID: 1544084008}
   m_Layer: 0
@@ -1824,52 +1823,6 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.5
---- !u!114 &1544084010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1544084007}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07133a4ea3b8a8744a02c3fc1fd82317, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Item_message: {fileID: 965955919}
-  ItemSlot1: {fileID: 277877383}
-  ItemSlot2: {fileID: 1318149656}
-  ItemSlot3: {fileID: 1734233688}
-  ItemSlot4: {fileID: 850617137}
-  ItemSlot5: {fileID: 860725847}
-  ItemSlot6: {fileID: 175403601}
-  ItemSlot7: {fileID: 2049307564}
-  Item_message_mouse: {fileID: 21300000, guid: e9a05593cd6ef11428d01af1fcd8e10c, type: 3}
-  Item_message_gamepad: {fileID: 21300000, guid: a10676c61ed3eac4592e3fb4066f55e2, type: 3}
-  ItemSlot_none_Img: {fileID: 21300000, guid: 1d3cd81875b010a40b020d1f704f326c, type: 3}
-  ItemSlot_handGun_Img: {fileID: 21300000, guid: 39e2bb03cfcf0bd459f005c98c33c925, type: 3}
-  ItemSlot_machineGun_Img: {fileID: 21300000, guid: c546a23b4bf948a45957c1c48957cba8, type: 3}
-  ItemSlot_knife_Img: {fileID: 21300000, guid: e9c712aed9f232445a561c3eef1789de, type: 3}
-  speed: 5
-  gamePad: 0
-  cam: {fileID: 2015046933}
-  aimImg: {fileID: 1979613239}
-  _playerInput: {fileID: 1544084011}
-  _aimActionName: Aim
-  _fireActionName: Fire
-  _Get_ItemActionName: Get_Item
-  handGun_bulletPrefab: {fileID: 3104754726715314943, guid: 95fd74bafab483a42a3bb561847031bb, type: 3}
-  bulletPoint: {fileID: 2043152649}
-  intervaltime: 0.5
-  shotSE: {fileID: 475897752}
-  aimSE: {fileID: 1776079135}
-  dropSE: {fileID: 1939862701}
-  getSE: {fileID: 505376243}
-  selectSlotSE: {fileID: 294424328}
-  itemSlotNum: 3
-  handGunPrefab: {fileID: 2315322964440742049, guid: 11407ada0d498fb4e82e10707193898e, type: 3}
-  knifePrefab: {fileID: 1373275830723101904, guid: 5616a785073decb44b4cd718be4e17f8, type: 3}
-  machineGunPrefab: {fileID: 2435154632783918994, guid: f0aad2980d44fbd4086faef8f6d07432, type: 3}
 --- !u!114 &1544084011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1888,7 +1841,7 @@ MonoBehaviour:
   m_DeviceLostEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1544084010}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: UnityEngine.Component, UnityEngine
         m_MethodName: SendMessage
         m_Mode: 5
@@ -1903,7 +1856,7 @@ MonoBehaviour:
   m_DeviceRegainedEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1544084010}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: 
         m_MethodName: 
         m_Mode: 1
