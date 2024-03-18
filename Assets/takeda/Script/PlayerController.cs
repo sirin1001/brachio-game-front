@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using static UnityEditor.Timeline.TimelinePlaybackControls;
 using System;
+using DG.Tweening;
 
 public class PlayerController : MonoBehaviour
 {
@@ -64,6 +65,15 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject handGun_bulletPrefab;
     private GameObject bulletPrefab;
 
+    //空のプレハブ
+    [SerializeField] GameObject emptyPrefab;
+
+    //プレイヤーが手にもつアイテム（ゲームオブジェクト）
+    [SerializeField] GameObject hand_in_knife;
+    [SerializeField] GameObject hand_in_handGun;
+    [SerializeField] GameObject hand_in_machineGun;
+    [SerializeField] GameObject hand_in_empty;
+
     //弾速
     private float bulletSpeed;
 
@@ -84,6 +94,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] AudioSource dropSE;
     [SerializeField] AudioSource getSE;
     [SerializeField] AudioSource selectSlotSE;
+    [SerializeField] AudioSource knifeSE;
 
     /*アイテム*/
     enum Item
@@ -196,6 +207,25 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    //スロットに応じた処理
+    void SlotProcess(Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun)
+    {
+        if (itemSlot[nowSlot] == itemName)
+        {
+            speed = Speed;
+            intervaltime = Intervaltime;
+            bulletSpeed = BulletSpeed;
+            bulletLostTime = BulletLostTime;
+            bulletPrefab = Item_bulletPrefab;
+            Item_equal_gun = equal_gun;
+            hand_in_item.SetActive(true);
+        }
+        else
+        {
+            hand_in_item.SetActive(false);
+        }
+    } 
+
     private void Update()
     {
 
@@ -235,12 +265,12 @@ public class PlayerController : MonoBehaviour
                         itemSlot[nowSlot] = Item.handGun;
                         nowSlotImg.sprite = ItemSlot_handGun_Img;
                     }
-                    if (triggerItem.name.Contains("knife"))
+                    else if (triggerItem.name.Contains("knife"))
                     {
                         itemSlot[nowSlot] = Item.knife;
                         nowSlotImg.sprite = ItemSlot_knife_Img;
                     }
-                    if (triggerItem.name.Contains("machineGun"))
+                    else if (triggerItem.name.Contains("machineGun"))
                     {
                         itemSlot[nowSlot] = Item.machineGun;
                         nowSlotImg.sprite = ItemSlot_machineGun_Img;
@@ -251,20 +281,17 @@ public class PlayerController : MonoBehaviour
                     getSE.Play();
                 }
             }
-            else//アイテム所持中ならアイテムを放出
+            else if (itemSlot[nowSlot] != Item.none)//アイテム所持中ならアイテムを放出
             {
                 //アイテムを生成する
-                if (itemSlot[nowSlot] == Item.handGun)
+                switch (itemSlot[nowSlot])
                 {
-                    GameObject handGun = Instantiate(handGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-90));
-                }
-                if (itemSlot[nowSlot] == Item.knife)
-                {
-                    GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0,0, rb.rotation));
-                }
-                if (itemSlot[nowSlot] == Item.machineGun)
-                {
-                    GameObject machineGun = Instantiate(machineGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-90));
+                    case Item.handGun: 
+                        GameObject handGun = Instantiate(handGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));break;
+                        case Item.machineGun: 
+                        GameObject machineGun = Instantiate(machineGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));break;
+                        case Item.knife: 
+                        GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation)); break;
                 }
                 //現在選択中のスロットを空にする
                 itemSlot[nowSlot] = Item.none;
@@ -272,42 +299,12 @@ public class PlayerController : MonoBehaviour
                 dropSE.Play();
             }
         }
-
-        //現在選択中のスロットに応じた処理
-        if (itemSlot[nowSlot] == Item.none)
-        {
-            speed = 5f;
-            Item_equal_gun = false;
-        }
-        if (itemSlot[nowSlot] == Item.handGun)
-        {
-            speed = 4.5f;
-
-            intervaltime = 0.5f;
-            bulletSpeed = 1000;
-            bulletLostTime = 1f;
-            bulletPrefab = handGun_bulletPrefab;
-            Item_equal_gun = true;
-        }
-        if (itemSlot[nowSlot] == Item.machineGun)
-        {
-            speed = 4f;
-
-            intervaltime = 0.1f;
-            bulletSpeed = 1000;
-            bulletLostTime = 1f;
-            bulletPrefab = handGun_bulletPrefab;
-            Item_equal_gun = true;
-        }
-        if (itemSlot[nowSlot] == Item.knife)
-        {
-            speed = 5f;
-
-            intervaltime = 0.5f;
-            bulletSpeed = 1000;
-            bulletPrefab = handGun_bulletPrefab;
-            Item_equal_gun = false;
-        }
+        //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun
+        //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
+        SlotProcess(Item.knife,5f,0.5f,1000,1f,handGun_bulletPrefab,hand_in_knife,false);
+        SlotProcess(Item.machineGun, 4f, 0.1f, 1000,1f, handGun_bulletPrefab, hand_in_machineGun,true);
+        SlotProcess(Item.handGun, 4.5f, 0.5f,1000,1f, handGun_bulletPrefab, hand_in_handGun,true);
+        SlotProcess(Item.none, 5f, 0.5f, 1000,1f, emptyPrefab, hand_in_empty,false);
 
         //gamePadの場合
         if (gamePad)
@@ -396,22 +393,37 @@ public class PlayerController : MonoBehaviour
         // 攻撃ボタンの押下状態取得
         bool isFirePressed = _fireAction.IsPressed();
 
-        if (Item_equal_gun)//アイテムが銃の時
             if (!interval && isFirePressed)//インターバルじゃない時なら発射
             {
-            GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
-            Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+            if (Item_equal_gun)//アイテムが銃の場合
+            {
+                Debug.Log(bulletPrefab.name);
+                GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
+                Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
-            // 弾速は自由に設定
-            bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
+                // 弾速は自由に設定
+                bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
 
-            // 発射音を出す
-            shotSE.Play();
+                // 発射音を出す
+                shotSE.Play();
 
-            // 時間差で砲弾を破壊する
-            Destroy(bullet, bulletLostTime);
+                // 時間差で砲弾を破壊する
+                Destroy(bullet, bulletLostTime);
 
-            interval = true;
+                interval = true;
+            }
+            else if (itemSlot[nowSlot] == Item.knife)//ナイフの場合
+            {
+                interval = true;
+                knifeSE.Play();
+                    hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, 0.7f, 0f), 0.2f);
+                    hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -50), 0.2f).OnComplete(() =>
+                    {
+                        hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, -0.8f, 0f), 0.2f);
+                        hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
+                    });
+            }
+            
         }
         //インターバル処理
         if (interval)
