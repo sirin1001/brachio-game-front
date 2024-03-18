@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.TextCore.Text;
 using System.Collections;
 using System.Collections.Generic;
-using static UnityEditor.Timeline.TimelinePlaybackControls;
+// using static UnityEditor.Timeline.TimelinePlaybackControls;
 using System;
 
 public class PlayerController : MonoBehaviour
