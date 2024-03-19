@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System;
 using DG.Tweening;
 using UnityEngine.UI;
-using static UnityEditor.Progress;
+// using static UnityEditor.Progress;
 
 public class PlayerController : MonoBehaviour
 {

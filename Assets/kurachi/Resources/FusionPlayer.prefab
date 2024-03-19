@@ -453,10 +453,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletPrefab: {fileID: 3104754726715314943, guid: 95fd74bafab483a42a3bb561847031bb, type: 3}
   bulletPoint: {fileID: 6968246181610987807}
-  bulletSpeed: 100
-  bulletLostTime: 100
-  temptime: 1
-  intervaltime: 0.2
+  bulletSpeed: 1000
+  bulletLostTime: 0.5
+  intervaltime: 0.5
 --- !u!1 &6968246181610987807
 GameObject:
   m_ObjectHideFlags: 0
