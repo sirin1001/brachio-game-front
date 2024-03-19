@@ -14,7 +14,7 @@ public class FireManager : NetworkBehaviour
 
     [SerializeField] float bulletSpeed;
     [SerializeField] float bulletLostTime;
-    [SerializeField] float temptime;
+    float temptime;
     [SerializeField] float intervaltime;
 
     AudioSource shotSE;
