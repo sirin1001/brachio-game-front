@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5278692181904565963}
   - component: {fileID: 1255714383091569987}
   - component: {fileID: 5473174404735128404}
+  - component: {fileID: -1730209058038290070}
   m_Layer: 0
   m_Name: machineGun_bullet
   m_TagString: Untagged
@@ -115,7 +116,7 @@ CapsuleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
@@ -148,3 +149,17 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &-1730209058038290070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7504381425879161128}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e93dc77ec0a9f1a4eac36fb05c7df06a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  damageValue: 2
+  Lost: 1

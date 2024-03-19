@@ -8,5 +8,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 2cda990e2423bbf4892e6590ba056729
-  m_configObjects:
-    com.unity.input.settings: {fileID: 11400000, guid: 0309ecc1b7451cc438cc9e44b7a38ac1, type: 2}
+  - enabled: 1
+    path: Assets/takeda/TitleScene.unity
+    guid: 2d98f7d75f53a934f885b3e71bcce92f
+  - enabled: 1
+    path: Assets/takeda/takeda.unity
+    guid: c807cbf0893185d4289249afc9208198
+  - enabled: 1
+    path: Assets/takeda/LoginScene.unity
+    guid: e7895f1ed43ab264298d52b35e5735cb
+  - enabled: 1
+    path: Assets/takeda/SignUpScene.unity
+    guid: 577ec1949f072d3418634e59b7b947ef

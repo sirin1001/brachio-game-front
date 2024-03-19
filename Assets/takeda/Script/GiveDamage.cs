@@ -5,7 +5,9 @@ using UnityEngine;
 public class GiveDamage : MonoBehaviour
 {
     private PlayerController playerController;
+    private NpcController NPCController;
     [SerializeField] private int damageValue;
+    [SerializeField] bool Lost;//è¡ñ≈Ç∑ÇÈÇ©
 
     // Start is called before the first frame update
     void Start()
@@ -19,7 +21,16 @@ public class GiveDamage : MonoBehaviour
         if (collision.CompareTag("Player"))
         {
             playerController.Damage(damageValue);
+            if(Lost)
+            Destroy(this.gameObject);
         }
-        Destroy(this.gameObject);
+        else if (collision.CompareTag("NPC"))
+        {
+            NPCController = collision.GetComponent<NpcController>();
+            NPCController.Damage(damageValue);
+            if (Lost)
+                Destroy(this.gameObject);
+        }
+        
     }
 }
