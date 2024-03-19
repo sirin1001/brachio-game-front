@@ -5,6 +5,7 @@ using UnityEngine;
 public class GiveDamage : MonoBehaviour
 {
     private PlayerController playerController;
+    private NpcController NPCController;
     [SerializeField] private int damageValue;
     [SerializeField] bool Lost;//è¡ñ≈Ç∑ÇÈÇ©
 
@@ -22,6 +23,13 @@ public class GiveDamage : MonoBehaviour
             playerController.Damage(damageValue);
             if(Lost)
             Destroy(this.gameObject);
+        }
+        else if (collision.CompareTag("NPC"))
+        {
+            NPCController = collision.GetComponent<NpcController>();
+            NPCController.Damage(damageValue);
+            if (Lost)
+                Destroy(this.gameObject);
         }
         
     }
