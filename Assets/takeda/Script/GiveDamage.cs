@@ -12,8 +12,12 @@ public class GiveDamage : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        GameObject Player = GameObject.Find("Player");
-        playerController = Player.GetComponent<PlayerController>();
+        if (GameObject.Find("Player") != null)
+        {
+            GameObject Player = GameObject.Find("Player");
+            playerController = Player.GetComponent<PlayerController>();
+        }
+        
     }
 
     private void OnTriggerEnter2D(Collider2D collision)

@@ -5,7 +5,6 @@ using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.VisualScripting;
-using Photon.Realtime;
 using static UnityEditor.Progress;
 using static UnityEngine.GraphicsBuffer;
 using UnityEngine.UIElements;
@@ -21,7 +20,7 @@ public class NpcController : MonoBehaviour
     [SerializeField] ParticleSystem recoveryFX;
     [SerializeField] ParticleSystem deadFX;
     //HP
-    private int HP = 100;
+    private float HP = 100;
 
     /*SE&BGM*/
     [SerializeField] AudioSource shotSE;
@@ -59,13 +58,16 @@ public class NpcController : MonoBehaviour
     //移動速度
     private float speed;
 
+    Vector2 goalPosition;
+
     //NPCの状態
     enum State
     {
         chase,
         attack,
         walk,
-        wait
+        wait,
+        escape,
     }
     enum Item
     {
@@ -79,8 +81,8 @@ public class NpcController : MonoBehaviour
     NavMeshAgent navMesh;
 
     //攻撃範囲、追いかけ範囲の判定
-     private bool attackRange;
-     private bool chaseRange;
+    private bool attackRange;
+    private bool chaseRange;
 
     private GameObject Target;
     private Transform TargetTransform;
@@ -89,34 +91,39 @@ public class NpcController : MonoBehaviour
     bool stateEnter = true;
     #endregion
     //アイテムに応じた処理
-    private void NPCItemProcess(float Speed,float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab, GameObject hand_in_item)
+    private void NPCItemProcess(float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab, GameObject hand_in_item)
     {
-            speed = Speed;
-            intervaltime = Intervaltime;
-            bulletSpeed = BulletSpeed;
-            bulletLostTime = BulletLostTime;
-            bulletPrefab = Item_bulletPrefab;
-            hand_in_item.SetActive(true);
+        speed = Speed;
+        intervaltime = Intervaltime;
+        bulletSpeed = BulletSpeed;
+        bulletLostTime = BulletLostTime;
+        bulletPrefab = Item_bulletPrefab;
+        hand_in_item.SetActive(true);
     }
 
     // Start is called before the first frame update
     void Start()
     {
+        shotSE = GameObject.Find("shotSE").GetComponent<AudioSource>();
+        knifeSE = GameObject.Find("knifeSE").GetComponent<AudioSource>();
+        damageSE = GameObject.Find("damageSE").GetComponent<AudioSource>();
+        deadSE = GameObject.Find("deadSE").GetComponent<AudioSource>();
+
         agent = GetComponent<NavMeshAgent2D>();
         rb = gameObject.GetComponent<Rigidbody2D>();
-        if(NpcItem == Item.knife)
+        if (NpcItem == Item.knife)
         {
-            NPCItemProcess(4.7f,0.5f, 1000, 1f, emptyPrefab, hand_in_knife);
+            NPCItemProcess(4.5f, 0.8f, 1000, 1f, emptyPrefab, hand_in_knife);
         }
-        else if(NpcItem == Item.handGun)
+        else if (NpcItem == Item.handGun)
         {
-            NPCItemProcess(4f,0.8f, 1000, 0.5f, handGun_bulletPrefab, hand_in_handGun);
+            NPCItemProcess(4f, 0.8f, 1000, 0.5f, handGun_bulletPrefab, hand_in_handGun);
         }
-        else if(NpcItem == Item.machineGun)
+        else if (NpcItem == Item.machineGun)
         {
-            NPCItemProcess(3f,0.13f, 1000, 0.5f, machineGun_bulletPrefab, hand_in_machineGun);
+            NPCItemProcess(3f, 0.11f, 1000, 0.5f, machineGun_bulletPrefab, hand_in_machineGun);
         }
-        
+
     }
 
     void ChangeState(State newState)
@@ -151,8 +158,12 @@ public class NpcController : MonoBehaviour
                 if (stateEnter)
                 {
                     stateEnter = false;
-                    float ran = Random.Range(0f, 5f);
                     Debug.Log("waitモードに移行");
+                }
+                if (HP <= 50)
+                {
+                    ChangeState(State.escape);
+                    return;
                 }
                 if (chaseRange)
                 {
@@ -164,23 +175,113 @@ public class NpcController : MonoBehaviour
                     ChangeState(State.walk);
                 }
                 break;
+            case State.escape:
+                if (stateEnter)
+                {
+                    agent.speed = speed;
+                    stateEnter = false;
+                    Debug.Log("waitモードに移行");
+                    int x = Random.Range(-44, 43);
+                    int y = Random.Range(-30, 33);
+                    goalPosition = new Vector2(x, y);
+                    Debug.Log(goalPosition);
+                }
+                else
+                {
+                    if (HP <= 80)
+                    {
+                        HP += 3 * Time.deltaTime;
+                        if (chaseRange)
+                        {
+                            Vector2 targetPosition = TargetTransform.position;
+                            Vector2 vector2 = (rb.position - targetPosition);
+                            Vector2 goalPos = rb.position + vector2 / 10;
+                            if (goalPos.x < 43 && goalPos.x >= -44 && goalPos.y < 33 && goalPos.y >= -30)
+                                agent.destination = goalPos;
+                            if (attackRange)
+                            {
+                                Vector2 lookDir = targetPosition - rb.position;
+                                //ターゲットとの角度を取得する
+                                float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
+                                rb.rotation = angle;
+
+                                if (!interval)//インターバルじゃない時なら発射
+                                {
+                                    if (NpcItem == Item.knife)//ナイフの場合
+                                    {
+                                        interval = true;
+                                        knifeDamageRange.SetActive(true);
+                                        knifeSE.Play();
+                                        hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, 0.7f, 0f), 0.2f);
+                                        hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -50), 0.2f).OnComplete(() =>
+                                        {
+                                            hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, -0.8f, 0f), 0.2f);
+                                            hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
+                                        });
+                                    }
+                                    else//アイテムが銃の場合
+                                    {
+                                        GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
+                                        Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+
+                                        // 弾速は自由に設定
+                                        bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
+
+                                        // 発射音を出す
+                                        shotSE.Play();
+
+                                        // 時間差で砲弾を破壊する
+                                        Destroy(bullet, bulletLostTime);
+
+                                        interval = true;
+                                    }
+
+                                }
+                            }
+                        }
+                        else
+                        {
+                            agent.destination = goalPosition;
+                            if ((rb.position - goalPosition).magnitude <= 0.5f)
+                                ChangeState(State.wait);
+                        }
+                    }
+                    else
+                    {
+                        ChangeState(State.wait); break;
+                    }
+                }
+                break;
 
             case State.walk:
+
                 if (stateEnter)
                 {
                     stateEnter = false;
                     Debug.Log("walkモードに移行");
+                    agent.speed = 3;
                     //↓ここに今からランダムな位置に移動するプログラム書く
+
+                    int x = Random.Range(-44, 43);
+                    int y = Random.Range(-30, 33);
+                    goalPosition = new Vector2(x, y);
+                    Debug.Log(goalPosition);
+
+                    agent.destination = goalPosition;
+                    Debug.Log("Destination position: " + agent.destination);
+
+                }
+                else
+                {
+                    agent.destination = goalPosition;
+                    if ((rb.position - goalPosition).magnitude <= 0.5f)
+                        ChangeState(State.wait);
                 }
                 if (chaseRange)
                 {
                     ChangeState(State.chase);
                     return;
                 }
-                //if (navMesh.remainingDistance <= 0.1f && !navMesh.pathPending)
-                //{
-                //    ChangeState(State.wait); return;
-                //}
                 break;
 
             case State.chase:
@@ -189,7 +290,11 @@ public class NpcController : MonoBehaviour
                     stateEnter = false;
                     Debug.Log("chaseモードに移行");
                 }
-
+                if (HP <= 50)
+                {
+                    ChangeState(State.escape);
+                    return;
+                }
                 if (attackRange)
                 {
                     ChangeState(State.attack);
@@ -199,7 +304,9 @@ public class NpcController : MonoBehaviour
                 {
                     agent.speed = speed;
                     Vector2 targetPosition = TargetTransform.position;
+                    //目的地をターゲットに
                     agent.destination = targetPosition;
+
                     Vector2 lookDir = targetPosition - rb.position;
                     //ターゲットとの角度を取得する
                     float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
@@ -219,7 +326,11 @@ public class NpcController : MonoBehaviour
                     Debug.Log("attackモードに移行");
                 }
                 //ここからNPCのアタックの挙動書きます↓
-                
+                if (HP <= 50)
+                {
+                    ChangeState(State.escape);
+                    return;
+                }
                 if (attackRange)
                 {
                     Vector2 targetPosition = TargetTransform.position;
@@ -261,9 +372,9 @@ public class NpcController : MonoBehaviour
 
                             interval = true;
                         }
-                        
+
                     }
-                    
+
                 }
                 else
                 {
@@ -316,7 +427,7 @@ public class NpcController : MonoBehaviour
         deadFX.Play();
         gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.3f).OnComplete(() =>
         {
-            
+
             gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f).OnComplete(() =>
             {
                 Destroy(this.gameObject);
