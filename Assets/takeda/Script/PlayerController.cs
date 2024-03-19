@@ -38,14 +38,14 @@ public class PlayerController : MonoBehaviour
     //パーティクル
     [SerializeField] ParticleSystem bloodFX;
     [SerializeField] ParticleSystem recoveryFX;
+    [SerializeField] ParticleSystem deadFX;
 
     //移動速度
-    [SerializeField] float speed;
+    private float speed;
     //HP
     private int HP=100;
 
     private Rigidbody2D rb;
-    private Transform tf;
 
     //inputSystem操作用
     private Vector2 movement;
@@ -100,7 +100,7 @@ public class PlayerController : MonoBehaviour
     //発射済みの待機時間中か
     bool interval = false;
     //発射間隔
-    [SerializeField] float intervaltime;
+    private float intervaltime;
     private float temptime;//インターバル処理用
 
     /*SE&BGM*/
@@ -112,6 +112,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] AudioSource knifeSE;
     [SerializeField] AudioSource damageSE;
     [SerializeField] AudioSource recoverySE;
+    [SerializeField] AudioSource deadSE;
 
     /*アイテム*/
     enum Item
@@ -151,7 +152,6 @@ public class PlayerController : MonoBehaviour
     {
         // プレイヤーにアタッチされているコンポーネントを取得
         rb = gameObject.GetComponent<Rigidbody2D>();
-        tf = gameObject.GetComponent<Transform>();
         //アクションをPlayerInputから取得
         _aimAction = _playerInput.actions[_aimActionName];
         _fireAction = _playerInput.actions[_fireActionName];
@@ -249,15 +249,8 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        //デバッグ用
-        if (Input.GetKeyUp(KeyCode.Space))
-        {
-            Damage(10);
-        }
-        if (Input.GetKeyUp(KeyCode.Backspace))
-        {
-            Recovery(10);
-        }
+        if (HP <= 0)
+            Dead();
 
         //現在選択中のスロット画像
         nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
@@ -446,11 +439,11 @@ public class PlayerController : MonoBehaviour
                         hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
                     });
             }
-            else if (itemSlot[nowSlot] == Item.herbs)//ハーブの場合
+            else if (itemSlot[nowSlot] == Item.herbs&&HP!=100)//ハーブの場合
             {
                 //回復してスロットを空に
                 itemSlot[nowSlot] = Item.none;
-                Recovery(10);
+                Recovery(20);
                 interval = true;
             }
             
@@ -474,9 +467,9 @@ public class PlayerController : MonoBehaviour
         //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,ItemSlot_item_Image
         //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
         SlotProcess(Item.knife, 5f, 0.5f, 1000, 1f, emptyPrefab, hand_in_knife, false, ItemSlot_knife_Img);
-        SlotProcess(Item.machineGun, 4f, 0.1f, 1000, 1f, machineGun_bulletPrefab, hand_in_machineGun, true, ItemSlot_machineGun_Img);
-        SlotProcess(Item.handGun, 4.5f, 0.5f, 1000, 1f, handGun_bulletPrefab, hand_in_handGun, true, ItemSlot_handGun_Img);
-        SlotProcess(Item.none, 5f, 0, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_none_Img);
+        SlotProcess(Item.machineGun, 4f, 0.1f, 1000, 0.5f, machineGun_bulletPrefab, hand_in_machineGun, true, ItemSlot_machineGun_Img);
+        SlotProcess(Item.handGun, 4.5f, 0.5f, 1000, 0.5f, handGun_bulletPrefab, hand_in_handGun, true, ItemSlot_handGun_Img);
+        SlotProcess(Item.none, 5.5f, 0, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_none_Img);
         SlotProcess(Item.herbs, 5f, 0.5f, 0, 0, emptyPrefab, hand_in_herbs, false, ItemSlot_herbs_Img);
     }
 
@@ -564,6 +557,22 @@ public class PlayerController : MonoBehaviour
         {
             gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);
             recoveryFX.Play();
+        });
+    }
+
+    //死亡
+    private void Dead()
+    {
+        deadSE.Play();
+        deadFX.Play();
+        gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.3f).OnComplete(() =>
+        {
+            
+            gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f).OnComplete(() =>
+            {
+                Destroy(this.gameObject);
+            });
+            
         });
     }
 }
