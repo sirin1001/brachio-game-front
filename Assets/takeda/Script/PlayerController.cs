@@ -8,6 +8,7 @@ using static UnityEditor.Timeline.TimelinePlaybackControls;
 using System;
 using DG.Tweening;
 using UnityEngine.UI;
+using static UnityEditor.Progress;
 
 public class PlayerController : MonoBehaviour
 {
@@ -31,9 +32,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite ItemSlot_handGun_Img;
     [SerializeField] Sprite ItemSlot_machineGun_Img;
     [SerializeField] Sprite ItemSlot_knife_Img;
+    [SerializeField] Sprite ItemSlot_herbs_Img;
+    private SpriteRenderer nowSlotImg;
 
     //パーティクル
-    [SerializeField] ParticleSystem blood;
+    [SerializeField] ParticleSystem bloodFX;
+    [SerializeField] ParticleSystem recoveryFX;
 
     //移動速度
     [SerializeField] float speed;
@@ -82,6 +86,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject hand_in_handGun;
     [SerializeField] GameObject hand_in_machineGun;
     [SerializeField] GameObject hand_in_empty;
+    [SerializeField] GameObject hand_in_herbs;
 
     //弾速
     private float bulletSpeed;
@@ -105,6 +110,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] AudioSource selectSlotSE;
     [SerializeField] AudioSource knifeSE;
     [SerializeField] AudioSource damageSE;
+    [SerializeField] AudioSource recoverySE;
 
     /*アイテム*/
     enum Item
@@ -113,7 +119,7 @@ public class PlayerController : MonoBehaviour
         handGun,
         machineGun,
         knife,
-        herb,
+        herbs,
     }
 
     //アイテムスロットの数（最初は３）
@@ -135,6 +141,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject handGunPrefab;
     [SerializeField] GameObject knifePrefab;
     [SerializeField] GameObject machineGunPrefab;
+    [SerializeField] GameObject herbsPrefab;
+
 
 
     // Start is called before the first frame update
@@ -219,7 +227,7 @@ public class PlayerController : MonoBehaviour
     }
 
     //スロットに応じた処理
-    void SlotProcess(Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun)
+    private void SlotProcess(Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,Sprite ItemSlot_itemImage)
     {
         if (itemSlot[nowSlot] == itemName)
         {
@@ -230,6 +238,7 @@ public class PlayerController : MonoBehaviour
             bulletPrefab = Item_bulletPrefab;
             Item_equal_gun = equal_gun;
             hand_in_item.SetActive(true);
+            nowSlotImg.sprite = ItemSlot_itemImage;
         }
         else
         {
@@ -239,11 +248,23 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        //デバッグ用
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            Damage(10);
+        }
+        if (Input.GetKeyUp(KeyCode.Backspace))
+        {
+            Recovery(10);
+        }
+
+        //現在選択中のスロット画像
+        nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
 
         //アイテム拾うボタンが押された時
         if (_Get_ItemAction.WasPressedThisFrame())
         {
-            SpriteRenderer nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
+            
             //アイテムに接触していたら
             if (itemTrigger)
             {
@@ -273,20 +294,13 @@ public class PlayerController : MonoBehaviour
                 {             
                     //接触しているアイテムを現在のスロットにぶち込む
                     if (triggerItem.name.Contains("handGun"))
-                    {
                         itemSlot[nowSlot] = Item.handGun;
-                        nowSlotImg.sprite = ItemSlot_handGun_Img;
-                    }
                     else if (triggerItem.name.Contains("knife"))
-                    {
                         itemSlot[nowSlot] = Item.knife;
-                        nowSlotImg.sprite = ItemSlot_knife_Img;
-                    }
                     else if (triggerItem.name.Contains("machineGun"))
-                    {
-                        itemSlot[nowSlot] = Item.machineGun;
-                        nowSlotImg.sprite = ItemSlot_machineGun_Img;
-                    }
+                    itemSlot[nowSlot] = Item.machineGun;
+                    else if (triggerItem.name.Contains("herbs"))
+                    itemSlot[nowSlot] = Item.herbs;
 
                     //接触しているアイテムを消す
                     Destroy(triggerItem);
@@ -304,19 +318,14 @@ public class PlayerController : MonoBehaviour
                         GameObject machineGun = Instantiate(machineGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));break;
                         case Item.knife: 
                         GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation)); break;
+                    case Item.herbs:
+                        GameObject herbs = Instantiate(herbsPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-30)); break;
                 }
                 //現在選択中のスロットを空にする
                 itemSlot[nowSlot] = Item.none;
-                nowSlotImg.sprite = ItemSlot_none_Img;
                 dropSE.Play();
             }
         }
-        //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun
-        //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
-        SlotProcess(Item.knife,5f,0.5f,1000,1f,emptyPrefab,hand_in_knife,false);
-        SlotProcess(Item.machineGun, 4f, 0.1f, 1000,1f, machineGun_bulletPrefab, hand_in_machineGun,true);
-        SlotProcess(Item.handGun, 4.5f, 0.5f,1000,1f, handGun_bulletPrefab, hand_in_handGun,true);
-        SlotProcess(Item.none, 5f, 0.5f, 1000,1f, emptyPrefab, hand_in_empty,false);
 
         //gamePadの場合
         if (gamePad)
@@ -435,6 +444,13 @@ public class PlayerController : MonoBehaviour
                         hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
                     });
             }
+            else if (itemSlot[nowSlot] == Item.herbs)//ハーブの場合
+            {
+                //回復してスロットを空に
+                itemSlot[nowSlot] = Item.none;
+                Recovery(10);
+                interval = true;
+            }
             
         }
         //インターバル処理
@@ -451,6 +467,14 @@ public class PlayerController : MonoBehaviour
             }
 
         }
+
+        //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,ItemSlot_item_Image
+        //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
+        SlotProcess(Item.knife, 5f, 0.5f, 1000, 1f, emptyPrefab, hand_in_knife, false, ItemSlot_knife_Img);
+        SlotProcess(Item.machineGun, 4f, 0.1f, 1000, 1f, machineGun_bulletPrefab, hand_in_machineGun, true, ItemSlot_machineGun_Img);
+        SlotProcess(Item.handGun, 4.5f, 0.5f, 1000, 1f, handGun_bulletPrefab, hand_in_handGun, true, ItemSlot_handGun_Img);
+        SlotProcess(Item.none, 5f, 0, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_none_Img);
+        SlotProcess(Item.herbs, 5f, 0.5f, 0, 0, emptyPrefab, hand_in_herbs, false, ItemSlot_herbs_Img);
     }
 
     private bool itemTrigger = false;
@@ -518,7 +542,25 @@ public class PlayerController : MonoBehaviour
         gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.15f).OnComplete(() =>
         {
             gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);
-            blood.Play();
+            bloodFX.Play();
+        });
+    }
+    //回復処理
+    public void Recovery(int recoveryValue)
+    {
+        recoverySE.Play();
+        HP += recoveryValue;//hpを増やす
+
+        var sequence = DOTween.Sequence();
+        //fill amountを使うためにhpを0～1の値に変える
+        float max1_hpgauze = (float)HP / 100f;
+
+            sequence.Append(HP_gauze.DOFillAmount(max1_hpgauze, 0.3f));
+
+        gameObject.GetComponent<SpriteRenderer>().DOColor(Color.green, 0.15f).OnComplete(() =>
+        {
+            gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);
+            recoveryFX.Play();
         });
     }
 }
