@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 4884846896390890255}
   - component: {fileID: -5868445260805247715}
   - component: {fileID: -7754476628716781369}
+  - component: {fileID: 641403968929735010}
   m_Layer: 0
   m_Name: PlayerCharacter
   m_TagString: Untagged
@@ -124,6 +125,7 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: 7977998643858712538}
   - {fileID: 4884846896390890255}
+  - {fileID: 641403968929735010}
 --- !u!114 &4884846896390890255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -194,3 +196,16 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &641403968929735010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2393141739464761979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e110250262b8d2a459a5c2c5d93da635, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shotSE: {fileID: 0}

@@ -7,6 +7,7 @@ using Fusion;
 public class PhotonPlayerController : NetworkBehaviour, IPlayerController
 {
     IPlayerController photonPlayerController;
+    FireManager fireManager;
     //UI
     [SerializeField] GameObject Item_message;
     [SerializeField] GameObject ItemSlot1;
@@ -116,7 +117,14 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
     void Start()
     {
         photonPlayerController = this.GetComponent<IPlayerController>();
+        fireManager = this.GetComponent<FireManager>();
 
+        if (HasStateAuthority)
+        {
+            // var PlayerCameraObject = Instantiate(PlayerCamera);
+            var PlayerCameraObject = GameObject.Find("Main Camera");
+            PlayerCameraObject.GetComponent<CameraManager>().SetTargetObject(this.gameObject);
+        }
         // Scene上のオブジェクトを取得
         Item_message = GameObject.Find("Item_message");
         ItemSlot1 = GameObject.Find("Slot1");
@@ -128,7 +136,6 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
         ItemSlot7 = GameObject.Find("Slot7");
 
         cam = GameObject.Find("Main Camera").GetComponent<Camera>();
-        GameObject.Find("Main Camera").GetComponent<CameraManager>().SetTargetObject(this.gameObject );
 
         // プレイヤーにアタッチされているコンポーネントを取得
         rb = gameObject.GetComponent<Rigidbody2D>();
@@ -218,6 +225,10 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
 
     private void Update()
     {
+        if (HasStateAuthority == false)
+        {
+            return;
+        }
         //アイテム拾うボタンが押された時
         if (_Get_ItemAction.WasPressedThisFrame())
         {
@@ -411,42 +422,9 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
             aimImg.SetActive(false);
         }
 
-        /*ファイア*/
-        // 攻撃ボタンの押下状態取得
-        bool isFirePressed = _fireAction.IsPressed();
-
-        if (Item_equal_gun)//アイテムが銃の時
-            if (!interval && isFirePressed)//インターバルじゃない時なら発射
-            {
-                GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
-                Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
-
-                // 弾速は自由に設定
-                bulletRb.AddForce(photonPlayerController.AngleToVector2(rb.rotation) * bulletSpeed);
-
-                // 発射音を出す
-                shotSE.Play();
-
-                // 時間差で砲弾を破壊する
-                Destroy(bullet, bulletLostTime);
-
-                interval = true;
-            }
-        //インターバル処理
-        if (interval)
-        {
-            if (temptime >= intervaltime)
-            {
-                temptime = 0f;
-                interval = false;
-            }
-            else
-            {
-                temptime += Time.deltaTime;
-            }
-        }
-
+        fireManager.Fire(_fireAction.IsPressed(), Item_equal_gun);
     }
+
     private bool itemTrigger = false;
     void OnTriggerStay2D(Collider2D collision)
     {
@@ -485,7 +463,7 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
     {
         return Mathf.Atan2(vector.y, vector.x) * Mathf.Rad2Deg;
     }
-    Vector2 IPlayerController.AngleToVector2(float angle)
+    public Vector2 AngleToVector2(float angle)
     {
         var radian = angle * (Mathf.PI / 180);
         return new Vector2(Mathf.Cos(radian), Mathf.Sin(radian)).normalized;

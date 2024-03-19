@@ -100,6 +100,7 @@ GameObject:
   - component: {fileID: -4468983667994915541}
   - component: {fileID: -4766877252137140769}
   - component: {fileID: 5896738956408919254}
+  - component: {fileID: -4360865011027393154}
   m_Layer: 0
   m_Name: FusionPlayer
   m_TagString: Untagged
@@ -369,6 +370,7 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: -4766877252137140769}
   - {fileID: 5896738956408919254}
+  - {fileID: -4360865011027393154}
 --- !u!114 &-4766877252137140769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -381,6 +383,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e60e91d3d5e7adf4fbe77f77f6e7dbef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PlayerCamera: {fileID: 8225861427152145593, guid: 041c820e1c81bc945b743a87246f4263, type: 3}
   Item_message: {fileID: 0}
   ItemSlot1: {fileID: 0}
   ItemSlot2: {fileID: 0}
@@ -437,6 +440,25 @@ MonoBehaviour:
     Position: 0.01
     Rotation: 0.01
     Scale: 0.01
+--- !u!114 &-4360865011027393154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5709940481494400308}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e110250262b8d2a459a5c2c5d93da635, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bulletPrefab: {fileID: 3104754726715314943, guid: 95fd74bafab483a42a3bb561847031bb, type: 3}
+  bulletPoint: {fileID: 6968246181610987807}
+  bulletSpeed: 10
+  bulletLostTime: 1
+  temptime: 0.1
+  intervaltime: 0.1
+  shotSE: {fileID: 0}
 --- !u!1 &6968246181610987807
 GameObject:
   m_ObjectHideFlags: 0

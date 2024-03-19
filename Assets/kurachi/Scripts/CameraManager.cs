@@ -1,30 +1,31 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Fusion;
+using static UnityEngine.GraphicsBuffer;
 
 public class CameraManager : MonoBehaviour
 {
-    // キャラクターオブジェクト
-    private GameObject playerObject;
-    // カメラとの距離
-    private Vector3 offset;
-
-    void Start()
+    GameObject _target;
+    private void Start()
     {
-        offset = transform.position - playerObject.transform.position;
+        if(_target == null)
+        {
+            _target = this.gameObject;
+        }
+        
+        // GameObject.Find("Main Camera").SetActive(false);
     }
-
-    void LateUpdate()
+    private void Update()
     {
-        var pos = transform.position;
-        Debug.Log($"playerObject.transform.position {playerObject}");
-        Debug.Log($"offset {offset}");
-        pos = playerObject.transform.position + offset;
+        var pos = _target.transform.position;
         pos.z = -5;
         transform.position = pos;
     }
-    public void SetTargetObject(GameObject obj)
+
+    public void SetTargetObject(GameObject Target)
     {
-        playerObject = obj;
+        Debug.Log($"[Debug] SetTargetObject {Target.name}");
+        _target = Target;
     }
 }
