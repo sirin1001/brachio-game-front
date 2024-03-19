@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/takeda/TitleScene.unity
     guid: 2d98f7d75f53a934f885b3e71bcce92f
   - enabled: 1
-    path: Assets/takeda/takeda.unity
+    path: Assets/takeda/OffLine.unity
     guid: c807cbf0893185d4289249afc9208198
   - enabled: 1
     path: Assets/takeda/LoginScene.unity
