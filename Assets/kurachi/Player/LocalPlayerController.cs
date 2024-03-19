@@ -1,13 +1,16 @@
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class LocalPlayerController : MonoBehaviour, IPlayerController
 {
     IPlayerController localPlayerController;
     //UI
     [SerializeField] GameObject Item_message;
+    [SerializeField] GameObject SlotMax_message;
     [SerializeField] GameObject ItemSlot1;
     [SerializeField] GameObject ItemSlot2;
     [SerializeField] GameObject ItemSlot3;
@@ -16,6 +19,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
     [SerializeField] GameObject ItemSlot6;
     [SerializeField] GameObject ItemSlot7;
     private GameObject NowItemSlot;
+    [SerializeField] Image HP_gauze;
 
     //画像
     [SerializeField] Sprite Item_message_mouse;
@@ -24,12 +28,19 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
     [SerializeField] Sprite ItemSlot_handGun_Img;
     [SerializeField] Sprite ItemSlot_machineGun_Img;
     [SerializeField] Sprite ItemSlot_knife_Img;
+    [SerializeField] Sprite ItemSlot_herbs_Img;
+    private SpriteRenderer nowSlotImg;
+
+    [SerializeField] ParticleSystem bloodFX;
+    [SerializeField] ParticleSystem recoveryFX;
+    [SerializeField] ParticleSystem deadFX;
 
     //移動速度
     [SerializeField] float speed;
+    //HP
+    private int HP = 100;
 
     private Rigidbody2D rb;
-    private Transform tf;
 
     //inputSystem操作用
     private Vector2 movement;
@@ -59,7 +70,19 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
 
     //弾丸のプレハブ
     [SerializeField] GameObject handGun_bulletPrefab;
+    [SerializeField] GameObject machineGun_bulletPrefab;
     private GameObject bulletPrefab;
+
+    //空のプレハブ
+    [SerializeField] GameObject emptyPrefab;
+
+    //プレイヤーが手にもつアイテム（ゲームオブジェクト）
+    [SerializeField] GameObject hand_in_knife;
+    [SerializeField] GameObject knifeDamageRange;
+    [SerializeField] GameObject hand_in_handGun;
+    [SerializeField] GameObject hand_in_machineGun;
+    [SerializeField] GameObject hand_in_empty;
+    [SerializeField] GameObject hand_in_herbs;
 
     //弾速
     private float bulletSpeed;
@@ -81,6 +104,10 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
     [SerializeField] AudioSource dropSE;
     [SerializeField] AudioSource getSE;
     [SerializeField] AudioSource selectSlotSE;
+    [SerializeField] AudioSource knifeSE;
+    [SerializeField] AudioSource damageSE;
+    [SerializeField] AudioSource recoverySE;
+    [SerializeField] AudioSource deadSE;
 
     /*アイテム*/
     enum Item
@@ -89,7 +116,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
         handGun,
         machineGun,
         knife,
-        herb,
+        herbs,
     }
 
     //アイテムスロットの数（最初は３）
@@ -111,6 +138,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
     [SerializeField] GameObject handGunPrefab;
     [SerializeField] GameObject knifePrefab;
     [SerializeField] GameObject machineGunPrefab;
+    [SerializeField] GameObject herbsPrefab;
 
     void Start()
     {
@@ -118,7 +146,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
 
         // プレイヤーにアタッチされているコンポーネントを取得
         rb = gameObject.GetComponent<Rigidbody2D>();
-        tf = gameObject.GetComponent<Transform>();
+        
         //アクションをPlayerInputから取得
         _aimAction = _playerInput.actions[_aimActionName];
         _fireAction = _playerInput.actions[_fireActionName];
@@ -134,6 +162,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
         }
 
         Item_message.SetActive(false);
+        SlotMax_message.SetActive(false);
         NowItemSlot = ItemSlot1;
     }
     void OnMove(InputValue movementValue)
@@ -143,8 +172,7 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
     void IPlayerController.OnMove(InputValue movementValue)
     {
         // Moveアクションの入力値を取得
-        movement = movementValue.Get<Vector2>();
-        Debug.Log($"[Debug] movement {movement}");
+        movement = movementValue.Get<Vector2>();        
     }
     void OnLook(InputValue LookValue)
     {
@@ -159,10 +187,12 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
             look = localPlayerController.Vector2ToAngle(LookValue.Get<Vector2>());
         }
     }
+    //アイテムスロットの切り替え
     void OnSelect_Item(InputValue SelectValue)
     {
         localPlayerController.OnSelect_Item(SelectValue);
     }
+    
     void IPlayerController.OnSelect_Item(InputValue SelectValue)
     {
         //アイテム切り替えボタンの入力値を受け取るVector2
@@ -201,21 +231,44 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
             selectSlotSE.Play();
         }
     }
-
+    private void SlotProcess(Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab, GameObject hand_in_item, bool equal_gun, Sprite ItemSlot_itemImage)
+    {
+        if (itemSlot[nowSlot] == itemName)
+        {
+            speed = Speed;
+            intervaltime = Intervaltime;
+            bulletSpeed = BulletSpeed;
+            bulletLostTime = BulletLostTime;
+            bulletPrefab = Item_bulletPrefab;
+            Item_equal_gun = equal_gun;
+            hand_in_item.SetActive(true);
+            nowSlotImg.sprite = ItemSlot_itemImage;
+        }
+        else
+        {
+            hand_in_item.SetActive(false);
+        }
+    }
     private void Update()
     {
+        if (HP <= 0)
+            Dead();
+
+        //現在選択中のスロット画像
+        nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
+
         //アイテム拾うボタンが押された時
         if (_Get_ItemAction.WasPressedThisFrame())
         {
-            SpriteRenderer nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
+            
             //アイテムに接触していたら
             if (itemTrigger)
             {
-                //スロット数が上限に達していない
-                if (itemSlotNum < MaxSlotNum)
+                //接触しているアイテムが鞄ならアイテムスロットを増やす
+                if (triggerItem.name.Contains("bag"))
                 {
-                    //接触しているアイテムが鞄ならアイテムスロットを増やす
-                    if (triggerItem.name.Contains("bag"))
+                    //スロット数が上限に達していない
+                    if (itemSlotNum < MaxSlotNum)
                     {
                         itemSlotNum++;
                         switch (itemSlotNum)
@@ -231,87 +284,42 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
                     }
                 }
 
-                //現在選択中のスロットに何もアイテムがない時
-                if (itemSlot[nowSlot] == Item.none)
+                //現在選択中のスロットに何もアイテムがない時 かつ　接触アイテムが鞄じゃない
+                if (itemSlot[nowSlot] == Item.none && !triggerItem.name.Contains("bag"))
                 {
                     //接触しているアイテムを現在のスロットにぶち込む
                     if (triggerItem.name.Contains("handGun"))
-                    {
                         itemSlot[nowSlot] = Item.handGun;
-                        nowSlotImg.sprite = ItemSlot_handGun_Img;
-                    }
-                    if (triggerItem.name.Contains("knife"))
-                    {
+                    else if (triggerItem.name.Contains("knife"))
                         itemSlot[nowSlot] = Item.knife;
-                        nowSlotImg.sprite = ItemSlot_knife_Img;
-                    }
-                    if (triggerItem.name.Contains("machineGun"))
-                    {
+                    else if (triggerItem.name.Contains("machineGun"))
                         itemSlot[nowSlot] = Item.machineGun;
-                        nowSlotImg.sprite = ItemSlot_machineGun_Img;
-                    }
+                    else if (triggerItem.name.Contains("herbs"))
+                        itemSlot[nowSlot] = Item.herbs;
 
                     //接触しているアイテムを消す
                     Destroy(triggerItem);
                     getSE.Play();
                 }
             }
-            else//アイテム所持中ならアイテムを放出
+            else if (itemSlot[nowSlot] != Item.none)//アイテム所持中ならアイテムを放出
             {
                 //アイテムを生成する
-                if (itemSlot[nowSlot] == Item.handGun)
+                switch (itemSlot[nowSlot])
                 {
-                    GameObject handGun = Instantiate(handGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
-                }
-                if (itemSlot[nowSlot] == Item.knife)
-                {
-                    GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation));
-                }
-                if (itemSlot[nowSlot] == Item.machineGun)
-                {
-                    GameObject machineGun = Instantiate(machineGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
+                    case Item.handGun:
+                        GameObject handGun = Instantiate(handGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90)); break;
+                    case Item.machineGun:
+                        GameObject machineGun = Instantiate(machineGunPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90)); break;
+                    case Item.knife:
+                        GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation)); break;
+                    case Item.herbs:
+                        GameObject herbs = Instantiate(herbsPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 30)); break;
                 }
                 //現在選択中のスロットを空にする
                 itemSlot[nowSlot] = Item.none;
-                nowSlotImg.sprite = ItemSlot_none_Img;
                 dropSE.Play();
             }
-        }
-
-        //現在選択中のスロットに応じた処理
-        if (itemSlot[nowSlot] == Item.none)
-        {
-            speed = 5f;
-            Item_equal_gun = false;
-        }
-        if (itemSlot[nowSlot] == Item.handGun)
-        {
-            speed = 4.5f;
-
-            intervaltime = 0.5f;
-            bulletSpeed = 1000;
-            bulletLostTime = 1f;
-            bulletPrefab = handGun_bulletPrefab;
-            Item_equal_gun = true;
-        }
-        if (itemSlot[nowSlot] == Item.machineGun)
-        {
-            speed = 4f;
-
-            intervaltime = 0.1f;
-            bulletSpeed = 1000;
-            bulletLostTime = 1f;
-            bulletPrefab = handGun_bulletPrefab;
-            Item_equal_gun = true;
-        }
-        if (itemSlot[nowSlot] == Item.knife)
-        {
-            speed = 5f;
-
-            intervaltime = 0.5f;
-            bulletSpeed = 1000;
-            bulletPrefab = handGun_bulletPrefab;
-            Item_equal_gun = false;
         }
 
         //gamePadの場合
@@ -400,24 +408,48 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
         /*ファイア*/
         // 攻撃ボタンの押下状態取得
         bool isFirePressed = _fireAction.IsPressed();
-
-        if (Item_equal_gun)//アイテムが銃の時
+        if (!interval && isFirePressed)//インターバルじゃない時なら発射
+        {
             if (!interval && isFirePressed)//インターバルじゃない時なら発射
             {
-                GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
-                Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+                if (Item_equal_gun)//アイテムが銃の時
+                {
+                    Debug.Log(bulletPrefab.name);
+                    GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
+                    Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
-                // 弾速は自由に設定
-                bulletRb.AddForce(localPlayerController.AngleToVector2(rb.rotation) * bulletSpeed);
+                    // 弾速は自由に設定
+                    bulletRb.AddForce(localPlayerController.AngleToVector2(rb.rotation) * bulletSpeed);
 
-                // 発射音を出す
-                shotSE.Play();
+                    // 発射音を出す
+                    shotSE.Play();
 
-                // 時間差で砲弾を破壊する
-                Destroy(bullet, bulletLostTime);
+                    // 時間差で砲弾を破壊する
+                    Destroy(bullet, bulletLostTime);
 
-                interval = true;
+                    interval = true;
+                }
+                else if (itemSlot[nowSlot] == Item.knife)//ナイフの場合
+                {
+                    interval = true;
+                    knifeDamageRange.SetActive(true);
+                    knifeSE.Play();
+                    hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, 0.7f, 0f), 0.2f);
+                    hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -50), 0.2f).OnComplete(() =>
+                    {
+                        hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, -0.8f, 0f), 0.2f);
+                        hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
+                    });
+                }
+                else if (itemSlot[nowSlot] == Item.herbs && HP != 100)//ハーブの場合
+                {
+                    //回復してスロットを空に
+                    itemSlot[nowSlot] = Item.none;
+                    Recovery(20);
+                    interval = true;
+                }
             }
+    }
         //インターバル処理
         if (interval)
         {
@@ -431,6 +463,13 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
                 temptime += Time.deltaTime;
             }
 
+            //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,ItemSlot_item_Image
+            //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
+            SlotProcess(Item.knife, 5f, 0.5f, 1000, 1f, emptyPrefab, hand_in_knife, false, ItemSlot_knife_Img);
+            SlotProcess(Item.machineGun, 4f, 0.1f, 1000, 0.5f, machineGun_bulletPrefab, hand_in_machineGun, true, ItemSlot_machineGun_Img);
+            SlotProcess(Item.handGun, 4.5f, 0.5f, 1000, 0.5f, handGun_bulletPrefab, hand_in_handGun, true, ItemSlot_handGun_Img);
+            SlotProcess(Item.none, 5.5f, 0, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_none_Img);
+            SlotProcess(Item.herbs, 5f, 0.5f, 0, 0, emptyPrefab, hand_in_herbs, false, ItemSlot_herbs_Img);
         }
     }
     private bool itemTrigger = false;
@@ -445,9 +484,16 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
         {
             itemTrigger = true;
             triggerItem = collision.gameObject;
+
+            //スロット数が上限に達していて接触中アイテムが鞄
+            if (itemSlotNum >= MaxSlotNum && triggerItem.name.Contains("bag"))
+            {
+                SlotMax_message.SetActive(true);
+            }
+
             //現在選択中のスロットに何もアイテムがない時
             //もしくは接触中のアイテムが鞄の時
-            if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag"))
+            else if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag"))
             {
                 //アイテムを拾うメッセージ
                 Item_message.SetActive(true);
@@ -464,16 +510,72 @@ public class LocalPlayerController : MonoBehaviour, IPlayerController
         if (other.CompareTag("Item"))
         {
             Item_message.SetActive(false);
+            SlotMax_message.SetActive(false);
             itemTrigger = false;
         }
     }
+    //ベクトルから角度を求める
     float IPlayerController.Vector2ToAngle(Vector2 vector)
     {
         return Mathf.Atan2(vector.y, vector.x) * Mathf.Rad2Deg;
     }
+    //角度からベクトルを求める
     Vector2 IPlayerController.AngleToVector2(float angle)
     {
         var radian = angle * (Mathf.PI / 180);
         return new Vector2(Mathf.Cos(radian), Mathf.Sin(radian)).normalized;
+    }
+    //ダメージ処理
+    public void Damage(int damageValue)
+    {
+        damageSE.Play();
+        HP -= damageValue;//hpを減らす
+
+        var sequence = DOTween.Sequence();
+        //fill amountを使うためにhpを0～1の値に変える
+        float max1_hpgauze = (float)HP / 100f;
+
+        //hpが0より大きいならその値までhpバーの画像を変化
+        if (HP > 0)
+            sequence.Append(HP_gauze.DOFillAmount(max1_hpgauze, 0.3f));
+        else//0以下なら0にする
+            sequence.Append(HP_gauze.DOFillAmount(0, 0.3f));
+
+        gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.15f).OnComplete(() =>
+        {
+            gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);
+            bloodFX.Play();
+        });
+    }
+    public void Recovery(int recoveryValue)
+{
+    recoverySE.Play();
+    HP += recoveryValue;//hpを増やす
+
+    var sequence = DOTween.Sequence();
+    //fill amountを使うためにhpを0～1の値に変える
+    float max1_hpgauze = (float)HP / 100f;
+
+    sequence.Append(HP_gauze.DOFillAmount(max1_hpgauze, 0.3f));
+
+    gameObject.GetComponent<SpriteRenderer>().DOColor(Color.green, 0.15f).OnComplete(() =>
+    {
+        gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);
+        recoveryFX.Play();
+    });
+}
+private void Dead()
+    {
+        deadSE.Play();
+        deadFX.Play();
+        gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.3f).OnComplete(() =>
+        {
+
+            gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f).OnComplete(() =>
+            {
+                Destroy(this.gameObject);
+            });
+
+        });
     }
 }
