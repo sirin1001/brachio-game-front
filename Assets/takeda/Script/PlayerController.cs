@@ -83,6 +83,7 @@ public class PlayerController : MonoBehaviour
 
     //プレイヤーが手にもつアイテム（ゲームオブジェクト）
     [SerializeField] GameObject hand_in_knife;
+    [SerializeField] GameObject knifeDamageRange;
     [SerializeField] GameObject hand_in_handGun;
     [SerializeField] GameObject hand_in_machineGun;
     [SerializeField] GameObject hand_in_empty;
@@ -436,6 +437,7 @@ public class PlayerController : MonoBehaviour
             else if (itemSlot[nowSlot] == Item.knife)//ナイフの場合
             {
                 interval = true;
+                knifeDamageRange.SetActive(true);
                 knifeSE.Play();
                     hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, 0.7f, 0f), 0.2f);
                     hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -50), 0.2f).OnComplete(() =>
@@ -459,6 +461,7 @@ public class PlayerController : MonoBehaviour
             if (temptime >= intervaltime)
             {
                 temptime = 0f;
+                knifeDamageRange.SetActive(false);
                 interval = false;
             }
             else
