@@ -17,16 +17,18 @@ public class FireManager : NetworkBehaviour
     [SerializeField] float temptime;
     [SerializeField] float intervaltime;
 
-    [SerializeField] AudioSource shotSE;
+    AudioSource shotSE;
     PhotonPlayerController photonPlayerController;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         photonPlayerController = GetComponent<PhotonPlayerController>();
-    }
 
-    public void Fire(bool IsPressed, bool Item_equal_gun)
+        shotSE = GameObject.Find("shotSE").GetComponent<AudioSource>();
+    }
+    [Rpc(RpcSources.All, RpcTargets.All)]
+    public void FireRpc(bool IsPressed, bool Item_equal_gun)
     {
         /*ファイア*/
         // 攻撃ボタンの押下状態取得

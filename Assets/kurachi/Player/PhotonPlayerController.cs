@@ -225,10 +225,6 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
 
     private void Update()
     {
-        if (HasStateAuthority == false)
-        {
-            return;
-        }
         //アイテム拾うボタンが押された時
         if (_Get_ItemAction.WasPressedThisFrame())
         {
@@ -348,6 +344,7 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
         else
         {
             Item_message.gameObject.GetComponent<SpriteRenderer>().sprite = Item_message_mouse;
+            
         }
 
         //gamePadの値がtrueに変えられたか
@@ -422,7 +419,7 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
             aimImg.SetActive(false);
         }
 
-        fireManager.Fire(_fireAction.IsPressed(), Item_equal_gun);
+        fireManager.FireRpc(_fireAction.IsPressed(), Item_equal_gun);
     }
 
     private bool itemTrigger = false;

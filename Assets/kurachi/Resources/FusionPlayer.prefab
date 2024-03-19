@@ -383,7 +383,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e60e91d3d5e7adf4fbe77f77f6e7dbef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayerCamera: {fileID: 8225861427152145593, guid: 041c820e1c81bc945b743a87246f4263, type: 3}
   Item_message: {fileID: 0}
   ItemSlot1: {fileID: 0}
   ItemSlot2: {fileID: 0}
@@ -454,11 +453,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bulletPrefab: {fileID: 3104754726715314943, guid: 95fd74bafab483a42a3bb561847031bb, type: 3}
   bulletPoint: {fileID: 6968246181610987807}
-  bulletSpeed: 10
-  bulletLostTime: 1
-  temptime: 0.1
-  intervaltime: 0.1
-  shotSE: {fileID: 0}
+  bulletSpeed: 100
+  bulletLostTime: 100
+  temptime: 1
+  intervaltime: 0.2
 --- !u!1 &6968246181610987807
 GameObject:
   m_ObjectHideFlags: 0
