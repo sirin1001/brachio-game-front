@@ -117,11 +117,11 @@ public class NpcController : MonoBehaviour
         }
         else if (NpcItem == Item.handGun)
         {
-            NPCItemProcess(4f, 0.8f, 1000, 0.5f, handGun_bulletPrefab, hand_in_handGun);
+            NPCItemProcess(4f, 0.8f, 1000, 0.7f, handGun_bulletPrefab, hand_in_handGun);
         }
         else if (NpcItem == Item.machineGun)
         {
-            NPCItemProcess(3f, 0.11f, 1000, 0.5f, machineGun_bulletPrefab, hand_in_machineGun);
+            NPCItemProcess(3f, 0.11f, 1000, 0.7f, machineGun_bulletPrefab, hand_in_machineGun);
         }
 
     }

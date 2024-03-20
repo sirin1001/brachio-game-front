@@ -24,6 +24,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject ItemSlot7;
     private GameObject NowItemSlot;
     [SerializeField] Image HP_gauze;
+    [SerializeField] Text text_handGunBulletNum;
+    [SerializeField] Text text_machineGunBulletNum;
 
     //画像
     [SerializeField] Sprite Item_message_mouse;
@@ -33,6 +35,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] Sprite ItemSlot_machineGun_Img;
     [SerializeField] Sprite ItemSlot_knife_Img;
     [SerializeField] Sprite ItemSlot_herbs_Img;
+    [SerializeField] Sprite ItemSlot_handGunBullet_Img;
+    [SerializeField] Sprite ItemSlot_machineGunBullet_Img;
     private SpriteRenderer nowSlotImg;
 
     //パーティクル
@@ -103,6 +107,10 @@ public class PlayerController : MonoBehaviour
     private float intervaltime;
     private float temptime;//インターバル処理用
 
+    //残弾数
+    private int handGunBulletNum=0;
+    private int machineGunBulletNum=0;
+
     /*SE&BGM*/
     [SerializeField] AudioSource shotSE;
     [SerializeField] AudioSource aimSE;
@@ -122,6 +130,8 @@ public class PlayerController : MonoBehaviour
         machineGun,
         knife,
         herbs,
+        handGunBullet,
+        machineGunBullet,
     }
 
     //アイテムスロットの数（最初は３）
@@ -139,11 +149,16 @@ public class PlayerController : MonoBehaviour
     //接触しているアイテム
     private GameObject triggerItem;
 
+    //手元に弾が残るか
+    private bool remainBullet;
+
     /*アイテムプレハブ*/
     [SerializeField] GameObject handGunPrefab;
     [SerializeField] GameObject knifePrefab;
     [SerializeField] GameObject machineGunPrefab;
     [SerializeField] GameObject herbsPrefab;
+    [SerializeField] GameObject handGunBulletPrefab;
+    [SerializeField] GameObject machineGunBulletPrefab;
 
 
 
@@ -228,7 +243,8 @@ public class PlayerController : MonoBehaviour
     }
 
     //スロットに応じた処理
-    private void SlotProcess(Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,Sprite ItemSlot_itemImage)
+    private void SlotProcess(Item itemName, float Speed, float Intervaltime, float BulletSpeed,
+        float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,Sprite ItemSlot_itemImage)
     {
         if (itemSlot[nowSlot] == itemName)
         {
@@ -251,6 +267,9 @@ public class PlayerController : MonoBehaviour
     {
         if (HP <= 0)
             Dead();
+
+        text_handGunBulletNum.text = "×"+handGunBulletNum.ToString();
+        text_machineGunBulletNum.text = "×" + machineGunBulletNum.ToString();
 
         //現在選択中のスロット画像
         nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
@@ -282,6 +301,20 @@ public class PlayerController : MonoBehaviour
                         getSE.Play();
                     }
                 }
+                if (triggerItem.name.Contains("hGBullet") && itemSlot[nowSlot]==Item.handGunBullet)//弾丸アイテムの時
+                {
+                    handGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                    //接触しているアイテムを消す
+                    Destroy(triggerItem);
+                    getSE.Play();
+                }
+                if (triggerItem.name.Contains("mGBullet") && itemSlot[nowSlot] == Item.machineGunBullet)//弾丸アイテムの時
+                {
+                    machineGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                    //接触しているアイテムを消す
+                    Destroy(triggerItem);
+                    getSE.Play();
+                }
 
                 //現在選択中のスロットに何もアイテムがない時 かつ　接触アイテムが鞄じゃない
                 if (itemSlot[nowSlot] == Item.none&&!triggerItem.name.Contains("bag"))
@@ -295,6 +328,16 @@ public class PlayerController : MonoBehaviour
                     itemSlot[nowSlot] = Item.machineGun;
                     else if (triggerItem.name.Contains("herbs"))
                     itemSlot[nowSlot] = Item.herbs;
+                    else if (triggerItem.name.Contains("hGBullet"))
+                    {
+                        handGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                        itemSlot[nowSlot] = Item.handGunBullet;
+                    }
+                    else if (triggerItem.name.Contains("mGBullet"))
+                    {
+                        machineGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                        itemSlot[nowSlot] = Item.machineGunBullet;
+                    };
 
                     //接触しているアイテムを消す
                     Destroy(triggerItem);
@@ -303,6 +346,7 @@ public class PlayerController : MonoBehaviour
             }
             else if (itemSlot[nowSlot] != Item.none)//アイテム所持中ならアイテムを放出
             {
+                remainBullet = false;
                 //アイテムを生成する
                 switch (itemSlot[nowSlot])
                 {
@@ -314,9 +358,42 @@ public class PlayerController : MonoBehaviour
                         GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation)); break;
                     case Item.herbs:
                         GameObject herbs = Instantiate(herbsPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-30)); break;
+                    case Item.handGunBullet:
+                        GameObject handGunBullet = Instantiate(handGunBulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 30));
+                        if (handGunBulletNum > 15)
+                        {
+                            handGunBullet.GetComponent<BulletNum>().bulletNum = 15;
+                            handGunBulletNum -= 15;
+                            remainBullet = true;
+                        }
+                        else
+                        {
+                            handGunBullet.GetComponent<BulletNum>().bulletNum = handGunBulletNum;
+                            handGunBulletNum =0;
+                            remainBullet = false;
+                        }
+                        break;
+                    case Item.machineGunBullet:
+                        GameObject machineGunBullet = Instantiate(machineGunBulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 30));
+                        if (machineGunBulletNum > 75)
+                        {
+                            machineGunBullet.GetComponent<BulletNum>().bulletNum = 75;
+                            machineGunBulletNum -= 75;
+                            remainBullet = true;
+                        }
+                        else
+                        {
+                            machineGunBullet.GetComponent<BulletNum>().bulletNum = machineGunBulletNum;
+                            machineGunBulletNum =0;
+                            remainBullet = false;
+                        }
+                        break;
                 }
                 //現在選択中のスロットを空にする
-                itemSlot[nowSlot] = Item.none;
+                if (!remainBullet)
+                {
+                    itemSlot[nowSlot] = Item.none;
+                }
                 dropSE.Play();
             }
         }
@@ -410,8 +487,13 @@ public class PlayerController : MonoBehaviour
 
             if (!interval && isFirePressed)//インターバルじゃない時なら発射
             {
-            if (Item_equal_gun)//アイテムが銃の場合
+            if ((itemSlot[nowSlot] == Item.handGun && handGunBulletNum > 0) || (itemSlot[nowSlot]==Item.machineGun&&machineGunBulletNum>0))//アイテムが銃の場合かつ弾があるとき
             {
+                switch (itemSlot[nowSlot])
+                {
+                    case Item.handGun:handGunBulletNum--; break;
+                        case Item.machineGun:machineGunBulletNum--; break; 
+                }
                 Debug.Log(bulletPrefab.name);
                 GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-90));
                 Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
@@ -467,10 +549,12 @@ public class PlayerController : MonoBehaviour
         //Item itemName, float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab,GameObject hand_in_item,bool equal_gun,ItemSlot_item_Image
         //現在選択中のスロットに応じた処理(else処理もあるのですべて実行する）
         SlotProcess(Item.knife, 5f, 0.5f, 1000, 1f, emptyPrefab, hand_in_knife, false, ItemSlot_knife_Img);
-        SlotProcess(Item.machineGun, 4f, 0.1f, 1000, 0.5f, machineGun_bulletPrefab, hand_in_machineGun, true, ItemSlot_machineGun_Img);
-        SlotProcess(Item.handGun, 4.5f, 0.5f, 1000, 0.5f, handGun_bulletPrefab, hand_in_handGun, true, ItemSlot_handGun_Img);
+        SlotProcess(Item.machineGun, 4f, 0.1f, 1000, 0.7f, machineGun_bulletPrefab, hand_in_machineGun, true, ItemSlot_machineGun_Img);
+        SlotProcess(Item.handGun, 4.5f, 0.5f, 1000, 0.7f, handGun_bulletPrefab, hand_in_handGun, true, ItemSlot_handGun_Img);
         SlotProcess(Item.none, 5.5f, 0, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_none_Img);
         SlotProcess(Item.herbs, 5f, 0.5f, 0, 0, emptyPrefab, hand_in_herbs, false, ItemSlot_herbs_Img);
+        SlotProcess(Item.handGunBullet, 5f, 0.5f, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_handGunBullet_Img);
+        SlotProcess(Item.machineGunBullet, 5f, 0.5f, 0, 0, emptyPrefab, hand_in_empty, false, ItemSlot_machineGunBullet_Img);
     }
 
     private bool itemTrigger = false;
@@ -489,7 +573,10 @@ public class PlayerController : MonoBehaviour
             }
                 //現在選択中のスロットに何もアイテムがない時
                 //もしくは接触中のアイテムが鞄の時
-               else if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag"))
+                //もしくは接触中のアイテムが銃弾で所持しているのも同じ銃弾
+               else if (itemSlot[nowSlot] == Item.none || triggerItem.name.Contains("bag")
+                || (itemSlot[nowSlot]==Item.handGunBullet&&triggerItem.name.Contains("hGBullet")
+                || (itemSlot[nowSlot] == Item.machineGunBullet && triggerItem.name.Contains("mGBullet"))))
             {
                 //アイテムを拾うメッセージ
                 Item_message.SetActive(true);
