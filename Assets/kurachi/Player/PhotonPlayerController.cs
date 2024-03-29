@@ -125,6 +125,14 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
             var PlayerCameraObject = GameObject.Find("Main Camera");
             PlayerCameraObject.GetComponent<CameraManager>().SetTargetObject(this.gameObject);
         }
+
+        shotSE = GameObject.Find("shotSE").GetComponent<AudioSource>();
+        aimSE  = GameObject.Find("aimSE") .GetComponent<AudioSource>();
+        dropSE = GameObject.Find("dropSE").GetComponent<AudioSource>();
+        getSE  = GameObject.Find("getSE") .GetComponent<AudioSource>();
+        selectSlotSE = GameObject.Find("selectSlotSE").GetComponent<AudioSource>();
+
+
         // Scene上のオブジェクトを取得
         Item_message = GameObject.Find("Item_message");
         ItemSlot1 = GameObject.Find("Slot1");
@@ -464,5 +472,10 @@ public class PhotonPlayerController : NetworkBehaviour, IPlayerController
     {
         var radian = angle * (Mathf.PI / 180);
         return new Vector2(Mathf.Cos(radian), Mathf.Sin(radian)).normalized;
+    }
+
+    public void Damage(float damage)
+    {
+        throw new System.NotImplementedException();
     }
 }

@@ -40,6 +40,8 @@ public class FireManager : NetworkBehaviour
                 GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.identity);
                 Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
+                bullet.GetComponent<GiveDamage>().SetMasterplayer(this.gameObject);
+
                 // íeë¨ÇÕé©óRÇ…ê›íË
                 bulletRb.AddForce(photonPlayerController.AngleToVector2(rb.rotation) * bulletSpeed);
 

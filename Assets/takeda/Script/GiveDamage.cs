@@ -4,16 +4,20 @@ using UnityEngine;
 
 public class GiveDamage : MonoBehaviour
 {
-    private PlayerController playerController;
+    private IPlayerController playerController;
     private NpcController NPCController;
     [SerializeField] private int damageValue;
     [SerializeField] bool Lost;//è¡ñ≈Ç∑ÇÈÇ©
 
+    GameObject MasterPlayer;
+
     // Start is called before the first frame update
     void Start()
     {
-        GameObject Player = GameObject.Find("Player");
-        playerController = Player.GetComponent<PlayerController>();
+        // GameObject Player = GameObject.Find("Player");
+        // playerController = Player.GetComponent<PlayerController>();
+
+        playerController = MasterPlayer.GetComponent<IPlayerController>();
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -32,5 +36,10 @@ public class GiveDamage : MonoBehaviour
                 Destroy(this.gameObject);
         }
         
+    }
+
+    public void SetMasterplayer(GameObject player)
+    {
+        MasterPlayer = player;
     }
 }
