@@ -10,4 +10,5 @@ public interface IPlayerController
     void OnTriggerExit2D(Collider2D other);
     float Vector2ToAngle(Vector2 vector);
     Vector2 AngleToVector2(float angle);
+    void Damage(float damage);
 }
