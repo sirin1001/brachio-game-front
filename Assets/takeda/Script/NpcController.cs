@@ -190,7 +190,7 @@ public class NpcController : MonoBehaviour
                 {
                     if (HP <= 80)
                     {
-                        HP += 3 * Time.deltaTime;
+                        HP += 0.5f * Time.deltaTime;
                         if (chaseRange)
                         {
                             Vector2 targetPosition = TargetTransform.position;

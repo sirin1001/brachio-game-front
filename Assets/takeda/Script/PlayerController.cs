@@ -268,6 +268,51 @@ public class PlayerController : MonoBehaviour
         if (HP <= 0)
             Dead();
 
+        if(handGunBulletNum == 0)
+        {
+            for(int i = 0;i<itemSlotNum;i++)
+            {
+
+                if (itemSlot[i] == Item.handGunBullet)
+                {
+                    itemSlot[i] = Item.none;
+                    switch (i)
+                    {
+                        case 0:ItemSlot1.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 1:ItemSlot2.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 2: ItemSlot3.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 3: ItemSlot4.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 4: ItemSlot5.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 5: ItemSlot6.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 6: ItemSlot7.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+
+                    }
+                }
+            }
+        }
+        if (machineGunBulletNum == 0)
+        {
+            for (int i = 0; i < itemSlotNum; i++)
+            {
+
+                if (itemSlot[i] == Item.machineGunBullet)
+                {
+                    itemSlot[i] = Item.none;
+                    switch (i)
+                    {
+                        case 0: ItemSlot1.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 1: ItemSlot2.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 2: ItemSlot3.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 3: ItemSlot4.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 4: ItemSlot5.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 5: ItemSlot6.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+                        case 6: ItemSlot7.GetComponent<SpriteRenderer>().sprite = ItemSlot_none_Img; break;
+
+                    }
+                }
+            }
+        }
+
         text_handGunBulletNum.text = "Å~"+handGunBulletNum.ToString();
         text_machineGunBulletNum.text = "Å~" + machineGunBulletNum.ToString();
 
