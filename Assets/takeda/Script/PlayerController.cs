@@ -112,7 +112,9 @@ public class PlayerController : MonoBehaviour
     private int machineGunBulletNum=0;
 
     /*SE&BGM*/
-    [SerializeField] AudioSource shotSE;
+    [SerializeField] AudioSource hG_shotSE;
+    [SerializeField] AudioSource mG_shotSE;
+    [SerializeField] AudioSource bulletEmptySE;
     [SerializeField] AudioSource aimSE;
     [SerializeField] AudioSource dropSE;
     [SerializeField] AudioSource getSE;
@@ -547,7 +549,11 @@ public class PlayerController : MonoBehaviour
                 bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
 
                 // 発射音を出す
-                shotSE.Play();
+                switch (itemSlot[nowSlot])
+                {
+                    case Item.handGun:hG_shotSE.Play();break;
+                    case Item.machineGun:mG_shotSE.Play();break;
+                }
 
                 // 時間差で砲弾を破壊する
                 Destroy(bullet, bulletLostTime);
@@ -566,12 +572,16 @@ public class PlayerController : MonoBehaviour
                         hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
                     });
             }
-            else if (itemSlot[nowSlot] == Item.herbs&&HP!=100)//ハーブの場合
+            else if (itemSlot[nowSlot] == Item.herbs&&HP<100)//ハーブの場合
             {
                 //回復してスロットを空に
                 itemSlot[nowSlot] = Item.none;
                 Recovery(20);
                 interval = true;
+            }
+            else if((itemSlot[nowSlot] == Item.handGun && handGunBulletNum == 0) || (itemSlot[nowSlot] == Item.machineGun && machineGunBulletNum == 0))//銃所持＆弾がないとき
+            {
+                bulletEmptySE.Play();
             }
             
         }
@@ -678,6 +688,8 @@ public class PlayerController : MonoBehaviour
     {
         recoverySE.Play();
         HP += recoveryValue;//hpを増やす
+        if(HP>100)
+            HP = 100;
 
         var sequence = DOTween.Sequence();
         //fill amountを使うためにhpを0～1の値に変える

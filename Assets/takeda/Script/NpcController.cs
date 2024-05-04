@@ -23,13 +23,19 @@ public class NpcController : MonoBehaviour
     private float HP = 100;
 
     /*SE&BGM*/
-    [SerializeField] AudioSource shotSE;
+    [SerializeField] AudioSource hG_shotSE;
+    [SerializeField] AudioSource mG_shotSE;
     [SerializeField] AudioSource knifeSE;
     [SerializeField] AudioSource damageSE;
     [SerializeField] AudioSource deadSE;
 
     //弾速
     private float bulletSpeed;
+
+    //弾数
+    private float limitedBullet;
+    //残弾数
+    private float tempBullet;
 
     //弾が消滅するまでの時間
     private float bulletLostTime;
@@ -58,7 +64,18 @@ public class NpcController : MonoBehaviour
     //移動速度
     private float speed;
 
-    Vector2 goalPosition;
+    //移動範囲
+    private float x_Max;
+    private float x_Min;
+
+    private float y_Max;
+    private float y_Min;
+
+    //ランダムな目的地
+    private Vector2 goalPosition;
+    //範囲設定用ゲームオブジェクト
+    GameObject goal1;
+    GameObject goal2;
 
     //NPCの状態
     enum State
@@ -91,7 +108,7 @@ public class NpcController : MonoBehaviour
     bool stateEnter = true;
     #endregion
     //アイテムに応じた処理
-    private void NPCItemProcess(float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab, GameObject hand_in_item)
+    private void NPCItemProcess(float Speed, float Intervaltime, float BulletSpeed, float BulletLostTime, GameObject Item_bulletPrefab, GameObject hand_in_item,int limitedbullet)
     {
         speed = Speed;
         intervaltime = Intervaltime;
@@ -99,12 +116,16 @@ public class NpcController : MonoBehaviour
         bulletLostTime = BulletLostTime;
         bulletPrefab = Item_bulletPrefab;
         hand_in_item.SetActive(true);
+        limitedBullet = limitedbullet;
+        tempBullet = limitedbullet;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        shotSE = GameObject.Find("shotSE").GetComponent<AudioSource>();
+        hG_shotSE = GameObject.Find("hG_shotSE").GetComponent<AudioSource>();
+        mG_shotSE = GameObject.Find("mG_shotSE").GetComponent<AudioSource>();
+
         knifeSE = GameObject.Find("knifeSE").GetComponent<AudioSource>();
         damageSE = GameObject.Find("damageSE").GetComponent<AudioSource>();
         deadSE = GameObject.Find("deadSE").GetComponent<AudioSource>();
@@ -113,16 +134,23 @@ public class NpcController : MonoBehaviour
         rb = gameObject.GetComponent<Rigidbody2D>();
         if (NpcItem == Item.knife)
         {
-            NPCItemProcess(4.5f, 0.8f, 1000, 1f, emptyPrefab, hand_in_knife);
+            NPCItemProcess(4.5f, 0.8f, 1000, 1f, emptyPrefab, hand_in_knife,0);
         }
         else if (NpcItem == Item.handGun)
         {
-            NPCItemProcess(4f, 0.8f, 1000, 0.7f, handGun_bulletPrefab, hand_in_handGun);
+            NPCItemProcess(4f, 0.8f, 1000, 0.7f, handGun_bulletPrefab, hand_in_handGun,10);
         }
         else if (NpcItem == Item.machineGun)
         {
-            NPCItemProcess(3f, 0.11f, 1000, 0.7f, machineGun_bulletPrefab, hand_in_machineGun);
+            NPCItemProcess(3f, 0.11f, 1000, 0.7f, machineGun_bulletPrefab, hand_in_machineGun,30);
         }
+
+        goal1 = GameObject.Find("goal1");
+        goal2 = GameObject.Find("goal2");
+        x_Max = goal2.transform.position.x;
+        x_Min = goal1.transform.position.x;
+        y_Max = goal1.transform.position.y;
+        y_Min = goal2.transform.position.y;
 
     }
 
@@ -157,10 +185,11 @@ public class NpcController : MonoBehaviour
             case State.wait:
                 if (stateEnter)
                 {
+
                     stateEnter = false;
                     Debug.Log("waitモードに移行");
                 }
-                if (HP <= 50)
+                if (HP <= 40)
                 {
                     ChangeState(State.escape);
                     return;
@@ -181,66 +210,76 @@ public class NpcController : MonoBehaviour
                     agent.speed = speed;
                     stateEnter = false;
                     Debug.Log("waitモードに移行");
-                    int x = Random.Range(-44, 43);
-                    int y = Random.Range(-30, 33);
+                    float x = Random.Range(x_Min, x_Max);
+                    float y = Random.Range(y_Min, y_Max);
                     goalPosition = new Vector2(x, y);
                     Debug.Log(goalPosition);
                 }
                 else
                 {
-                    if (HP <= 80)
-                    {
-                        HP += 0.5f * Time.deltaTime;
-                        if (chaseRange)
+                    if (HP <= 60)
+                    {                       
+                        Vector2 targetPosition = TargetTransform.position;
+                        Vector2 vector2 = (rb.position - targetPosition);
+                        if (attackRange)
                         {
-                            Vector2 targetPosition = TargetTransform.position;
-                            Vector2 vector2 = (rb.position - targetPosition);
+                            Vector2 lookDir = targetPosition - rb.position;
+                            //ターゲットとの角度を取得する
+                            float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
+                            rb.rotation = angle;
+
                             Vector2 goalPos = rb.position + vector2 / 10;
                             if (goalPos.x < 43 && goalPos.x >= -44 && goalPos.y < 33 && goalPos.y >= -30)
                                 agent.destination = goalPos;
-                            if (attackRange)
+
+                            if (!interval)//インターバルじゃない時なら発射
                             {
-                                Vector2 lookDir = targetPosition - rb.position;
-                                //ターゲットとの角度を取得する
-                                float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
-                                rb.rotation = angle;
-
-                                if (!interval)//インターバルじゃない時なら発射
+                                if (NpcItem == Item.knife)//ナイフの場合
                                 {
-                                    if (NpcItem == Item.knife)//ナイフの場合
+                                    interval = true;
+                                    knifeDamageRange.SetActive(true);
+                                    knifeSE.Play();
+                                    hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, 0.7f, 0f), 0.2f);
+                                    hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -50), 0.2f).OnComplete(() =>
                                     {
-                                        interval = true;
-                                        knifeDamageRange.SetActive(true);
-                                        knifeSE.Play();
-                                        hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, 0.7f, 0f), 0.2f);
-                                        hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -50), 0.2f).OnComplete(() =>
-                                        {
-                                            hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, -0.8f, 0f), 0.2f);
-                                            hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
-                                        });
-                                    }
-                                    else//アイテムが銃の場合
-                                    {
-                                        GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
-                                        Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
-
-                                        // 弾速は自由に設定
-                                        bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
-
-                                        // 発射音を出す
-                                        shotSE.Play();
-
-                                        // 時間差で砲弾を破壊する
-                                        Destroy(bullet, bulletLostTime);
-
-                                        interval = true;
-                                    }
-
+                                        hand_in_knife.transform.DOLocalMove(new Vector3(0.53f, -0.8f, 0f), 0.2f);
+                                        hand_in_knife.transform.DOLocalRotate(new Vector3(0, 0, -137.63f), 0.2f);
+                                    });
                                 }
+                                else//アイテムが銃の場合
+                                {
+                                    GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
+                                    Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+
+                                    // 弾速は自由に設定
+                                    bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
+
+                                    // 発射音を出す
+                                    switch (NpcItem)
+                                    {
+                                        case Item.handGun:hG_shotSE.Play(); break;
+                                        case Item.machineGun:mG_shotSE.Play();break;
+                                    }
+
+                                    // 時間差で砲弾を破壊する
+                                    Destroy(bullet, bulletLostTime);
+
+                                    interval = true;
+                                }
+
                             }
+                        }
+                        else if (chaseRange)
+                        {
+                            HP += 0.5f * Time.deltaTime;
+                            Vector2 goalPos = rb.position + vector2 / 10;
+                            if (goalPos.x < 43 && goalPos.x >= -44 && goalPos.y < 33 && goalPos.y >= -30)
+                                agent.destination = goalPos;
+                         
                         }
                         else
                         {
+                            HP += 1 * Time.deltaTime;
                             agent.destination = goalPosition;
                             if ((rb.position - goalPosition).magnitude <= 0.5f)
                                 ChangeState(State.wait);
@@ -259,11 +298,11 @@ public class NpcController : MonoBehaviour
                 {
                     stateEnter = false;
                     Debug.Log("walkモードに移行");
-                    agent.speed = 3;
-                    //↓ここに今からランダムな位置に移動するプログラム書く
+                    agent.speed = 1;
+                    //ランダムな位置に移動
 
-                    int x = Random.Range(-44, 43);
-                    int y = Random.Range(-30, 33);
+                    float x = Random.Range(x_Min, x_Max);
+                    float y = Random.Range(y_Min, y_Max);
                     goalPosition = new Vector2(x, y);
                     Debug.Log(goalPosition);
 
@@ -271,17 +310,22 @@ public class NpcController : MonoBehaviour
                     Debug.Log("Destination position: " + agent.destination);
 
                 }
-                else
-                {
-                    agent.destination = goalPosition;
-                    if ((rb.position - goalPosition).magnitude <= 0.5f)
-                        ChangeState(State.wait);
-                }
-                if (chaseRange)
+                else if (chaseRange)
                 {
                     ChangeState(State.chase);
                     return;
                 }
+                else
+                {
+                    if(tempBullet<limitedBullet)
+                    {
+                        tempBullet += 1 * Time.deltaTime;
+                    }
+                    agent.destination = goalPosition;
+                    if ((rb.position - goalPosition).magnitude <= 0.5f)
+                        ChangeState(State.wait);
+                }
+                
                 break;
 
             case State.chase:
@@ -326,20 +370,23 @@ public class NpcController : MonoBehaviour
                     Debug.Log("attackモードに移行");
                 }
                 //ここからNPCのアタックの挙動書きます↓
-                if (HP <= 50)
+                else if (HP <= 40)
                 {
                     ChangeState(State.escape);
                     return;
                 }
-                if (attackRange)
+                else if (attackRange)
                 {
                     Vector2 targetPosition = TargetTransform.position;
-                    agent.destination = targetPosition;
-                    Vector2 lookDir = targetPosition - rb.position;
-                    //ターゲットとの角度を取得する
-                    float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
-                    rb.rotation = angle;
-
+                    if(tempBullet > 0)
+                    {
+                        agent.destination = targetPosition;
+                        Vector2 lookDir = targetPosition - rb.position;
+                        //ターゲットとの角度を取得する
+                        float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
+                        rb.rotation = angle;
+                    }
+                    
                     if (!interval)//インターバルじゃない時なら発射
                     {
                         if (NpcItem == Item.knife)//ナイフの場合
@@ -357,20 +404,45 @@ public class NpcController : MonoBehaviour
                         }
                         else//アイテムが銃の場合
                         {
-                            agent.speed = 2;
-                            GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
-                            Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
+                            //残弾あり
+                            if (tempBullet > 0)
+                            {
+                                tempBullet--;
+                                agent.speed = 2;
+                                GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 90));
+                                Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
-                            // 弾速は自由に設定
-                            bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
+                                // 弾速は自由に設定
+                                bulletRb.AddForce(AngleToVector2(rb.rotation) * bulletSpeed);
 
-                            // 発射音を出す
-                            shotSE.Play();
+                                // 発射音を出す
+                                switch (NpcItem)
+                                {
+                                    case Item.handGun: hG_shotSE.Play(); break;
+                                    case Item.machineGun: mG_shotSE.Play(); break;
+                                }
 
-                            // 時間差で砲弾を破壊する
-                            Destroy(bullet, bulletLostTime);
+                                // 時間差で砲弾を破壊する
+                                Destroy(bullet, bulletLostTime);
 
-                            interval = true;
+                                interval = true;
+                            }
+                            //残弾なしなら逃げる
+                            else
+                            {
+                                targetPosition = TargetTransform.position;
+                                Vector2 vector2 = (rb.position - targetPosition);
+
+                                Vector2 lookDir = targetPosition - rb.position;
+                                //ターゲットとの角度を取得する
+                                float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg;
+                                rb.rotation = angle;
+
+                                Vector2 goalPos = rb.position + vector2 / 10;
+                                if (goalPos.x < 43 && goalPos.x >= -44 && goalPos.y < 33 && goalPos.y >= -30)
+                                    agent.destination = goalPos;
+                            }
+                                
                         }
 
                     }

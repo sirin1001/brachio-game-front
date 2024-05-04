@@ -259,7 +259,8 @@ MonoBehaviour:
   bloodFX: {fileID: 7483617600662785218}
   recoveryFX: {fileID: 4811346377978405424}
   deadFX: {fileID: 7675670191225559276}
-  shotSE: {fileID: 0}
+  hG_shotSE: {fileID: 0}
+  mG_shotSE: {fileID: 0}
   knifeSE: {fileID: 0}
   damageSE: {fileID: 0}
   deadSE: {fileID: 0}
@@ -5295,7 +5296,7 @@ CircleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Radius: 1.2
+  m_Radius: 1
 --- !u!114 &2095227705184054608
 MonoBehaviour:
   m_ObjectHideFlags: 0
