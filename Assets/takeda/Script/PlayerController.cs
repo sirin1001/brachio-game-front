@@ -82,6 +82,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject machineGun_bulletPrefab;
     private GameObject bulletPrefab;
 
+    //弾丸スロット
+    int MaxHandBullet = 30;
+    int MaxMachineBullet = 150;
+
     //空のプレハブ
     [SerializeField] GameObject emptyPrefab;
 
@@ -159,8 +163,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] GameObject knifePrefab;
     [SerializeField] GameObject machineGunPrefab;
     [SerializeField] GameObject herbsPrefab;
-    [SerializeField] GameObject handGunBulletPrefab;
-    [SerializeField] GameObject machineGunBulletPrefab;
+    //[SerializeField] GameObject handGunBulletPrefab;
+    //[SerializeField] GameObject machineGunBulletPrefab;
 
 
 
@@ -270,7 +274,7 @@ public class PlayerController : MonoBehaviour
         if (HP <= 0)
             Dead();
 
-        if(handGunBulletNum == 0)
+      /*  if(handGunBulletNum == 0)
         {
             for(int i = 0;i<itemSlotNum;i++)
             {
@@ -291,8 +295,8 @@ public class PlayerController : MonoBehaviour
                     }
                 }
             }
-        }
-        if (machineGunBulletNum == 0)
+        }*/
+        /*if (machineGunBulletNum == 0)
         {
             for (int i = 0; i < itemSlotNum; i++)
             {
@@ -313,10 +317,10 @@ public class PlayerController : MonoBehaviour
                     }
                 }
             }
-        }
+        }*/
 
-        text_handGunBulletNum.text = "×"+handGunBulletNum.ToString();
-        text_machineGunBulletNum.text = "×" + machineGunBulletNum.ToString();
+        text_handGunBulletNum.text = "×"+handGunBulletNum.ToString()+"/" + MaxHandBullet.ToString();
+        text_machineGunBulletNum.text = "×" + machineGunBulletNum.ToString()+"/" + MaxMachineBullet.ToString();
 
         //現在選択中のスロット画像
         nowSlotImg = NowItemSlot.GetComponent<SpriteRenderer>();
@@ -348,23 +352,29 @@ public class PlayerController : MonoBehaviour
                         getSE.Play();
                     }
                 }
-                if (triggerItem.name.Contains("hGBullet") && itemSlot[nowSlot]==Item.handGunBullet)//弾丸アイテムの時
+                if (triggerItem.name.Contains("hGBullet"))//弾丸アイテムの時
                 {
-                    handGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
-                    //接触しているアイテムを消す
-                    Destroy(triggerItem);
-                    getSE.Play();
+                    if(handGunBulletNum + triggerItem.GetComponent<BulletNum>().bulletNum <= MaxHandBullet)
+                    {
+                        handGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                        //接触しているアイテムを消す
+                        Destroy(triggerItem);
+                        getSE.Play();
+                    }
+                    
                 }
-                if (triggerItem.name.Contains("mGBullet") && itemSlot[nowSlot] == Item.machineGunBullet)//弾丸アイテムの時
+                else if (triggerItem.name.Contains("mGBullet"))//弾丸アイテムの時
                 {
-                    machineGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
-                    //接触しているアイテムを消す
-                    Destroy(triggerItem);
-                    getSE.Play();
+                    if(machineGunBulletNum + triggerItem.GetComponent<BulletNum>().bulletNum <= MaxMachineBullet)
+                    {
+                        machineGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                        //接触しているアイテムを消す
+                        Destroy(triggerItem);
+                        getSE.Play();
+                    }
                 }
-
                 //現在選択中のスロットに何もアイテムがない時 かつ　接触アイテムが鞄じゃない
-                if (itemSlot[nowSlot] == Item.none&&!triggerItem.name.Contains("bag"))
+                else if (itemSlot[nowSlot] == Item.none&&!triggerItem.name.Contains("bag"))
                 {             
                     //接触しているアイテムを現在のスロットにぶち込む
                     if (triggerItem.name.Contains("handGun"))
@@ -375,7 +385,7 @@ public class PlayerController : MonoBehaviour
                     itemSlot[nowSlot] = Item.machineGun;
                     else if (triggerItem.name.Contains("herbs"))
                     itemSlot[nowSlot] = Item.herbs;
-                    else if (triggerItem.name.Contains("hGBullet"))
+/*                    else if (triggerItem.name.Contains("hGBullet"))
                     {
                         handGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
                         itemSlot[nowSlot] = Item.handGunBullet;
@@ -384,7 +394,7 @@ public class PlayerController : MonoBehaviour
                     {
                         machineGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
                         itemSlot[nowSlot] = Item.machineGunBullet;
-                    };
+                    };*/
 
                     //接触しているアイテムを消す
                     Destroy(triggerItem);
@@ -405,36 +415,6 @@ public class PlayerController : MonoBehaviour
                         GameObject knife = Instantiate(knifePrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation)); break;
                     case Item.herbs:
                         GameObject herbs = Instantiate(herbsPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-30)); break;
-                    case Item.handGunBullet:
-                        GameObject handGunBullet = Instantiate(handGunBulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 30));
-                        if (handGunBulletNum > 15)
-                        {
-                            handGunBullet.GetComponent<BulletNum>().bulletNum = 15;
-                            handGunBulletNum -= 15;
-                            remainBullet = true;
-                        }
-                        else
-                        {
-                            handGunBullet.GetComponent<BulletNum>().bulletNum = handGunBulletNum;
-                            handGunBulletNum =0;
-                            remainBullet = false;
-                        }
-                        break;
-                    case Item.machineGunBullet:
-                        GameObject machineGunBullet = Instantiate(machineGunBulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation - 30));
-                        if (machineGunBulletNum > 75)
-                        {
-                            machineGunBullet.GetComponent<BulletNum>().bulletNum = 75;
-                            machineGunBulletNum -= 75;
-                            remainBullet = true;
-                        }
-                        else
-                        {
-                            machineGunBullet.GetComponent<BulletNum>().bulletNum = machineGunBulletNum;
-                            machineGunBulletNum =0;
-                            remainBullet = false;
-                        }
-                        break;
                 }
                 //現在選択中のスロットを空にする
                 if (!remainBullet)
