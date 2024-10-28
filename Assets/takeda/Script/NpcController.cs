@@ -5,7 +5,6 @@ using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.VisualScripting;
-using static UnityEditor.Progress;
 using static UnityEngine.GraphicsBuffer;
 using UnityEngine.UIElements;
 using TMPro;
@@ -21,6 +20,7 @@ public class NpcController : MonoBehaviour
     [SerializeField] ParticleSystem deadFX;
     //HP
     private float HP = 100;
+    bool isDead = false;
 
     /*SE&BGM*/
     [SerializeField] AudioSource hG_shotSE;
@@ -163,8 +163,6 @@ public class NpcController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (HP <= 0)
-            Dead();
         //インターバル処理
         if (interval)
         {
@@ -465,11 +463,20 @@ public class NpcController : MonoBehaviour
     }
 
     //ダメージ処理
-    public void Damage(int damageValue)
+    public void Damage(int damageValue,bool isPlayer)
     {
         damageSE.Play();
         HP -= damageValue;//hpを減らす
-
+        if (HP<=0&&!isDead)
+        {
+            isDead = true;
+            Dead();
+            if (isPlayer)//Playerの倒されたならキル数加算
+            {
+                OffGameManager offGameManager = GameObject.FindObjectOfType<OffGameManager>();
+                offGameManager.UpdateKillNum();
+            }
+        }
         gameObject.GetComponent<SpriteRenderer>().DOColor(Color.red, 0.15f).OnComplete(() =>
         {
             gameObject.GetComponent<SpriteRenderer>().DOColor(Color.white, 0.1f);

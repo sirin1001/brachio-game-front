@@ -8,6 +8,7 @@ public class GiveDamage : MonoBehaviour
     private NpcController NPCController;
     [SerializeField] private int damageValue;
     [SerializeField] bool Lost;//消滅するか
+    public bool isPlayer;//プレイヤー出した弾か
 
     // Start is called before the first frame update
     void Start()
@@ -31,7 +32,7 @@ public class GiveDamage : MonoBehaviour
         else if (collision.CompareTag("NPC"))
         {
             NPCController = collision.GetComponent<NpcController>();
-            NPCController.Damage(damageValue);
+            NPCController.Damage(damageValue,isPlayer);
             if (Lost)
                 Destroy(this.gameObject);
         }

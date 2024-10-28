@@ -354,9 +354,13 @@ public class PlayerController : MonoBehaviour
                 }
                 if (triggerItem.name.Contains("hGBullet"))//弾丸アイテムの時
                 {
-                    if(handGunBulletNum + triggerItem.GetComponent<BulletNum>().bulletNum <= MaxHandBullet)
+                    if(handGunBulletNum < MaxHandBullet)
                     {
                         handGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                        if(handGunBulletNum > MaxHandBullet)
+                        {
+                            handGunBulletNum = MaxHandBullet;
+                        }
                         //接触しているアイテムを消す
                         Destroy(triggerItem);
                         getSE.Play();
@@ -365,9 +369,13 @@ public class PlayerController : MonoBehaviour
                 }
                 else if (triggerItem.name.Contains("mGBullet"))//弾丸アイテムの時
                 {
-                    if(machineGunBulletNum + triggerItem.GetComponent<BulletNum>().bulletNum <= MaxMachineBullet)
+                    if(machineGunBulletNum <= MaxMachineBullet)
                     {
                         machineGunBulletNum += triggerItem.GetComponent<BulletNum>().bulletNum;
+                        if(machineGunBulletNum >= MaxMachineBullet)
+                        {
+                            machineGunBulletNum = MaxMachineBullet;
+                        }
                         //接触しているアイテムを消す
                         Destroy(triggerItem);
                         getSE.Play();
@@ -523,6 +531,7 @@ public class PlayerController : MonoBehaviour
                 }
                 Debug.Log(bulletPrefab.name);
                 GameObject bullet = Instantiate(bulletPrefab, bulletPoint.transform.position, Quaternion.Euler(0, 0, rb.rotation-90));
+                bullet.GetComponent<GiveDamage>().isPlayer = true;
                 Rigidbody2D bulletRb = bullet.GetComponent<Rigidbody2D>();
 
                 // 弾速は自由に設定

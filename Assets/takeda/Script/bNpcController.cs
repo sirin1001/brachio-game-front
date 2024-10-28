@@ -5,7 +5,6 @@ using UnityEngine.UI;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.VisualScripting;
-using static UnityEditor.Progress;
 using static UnityEngine.GraphicsBuffer;
 using UnityEngine.UIElements;
 using TMPro;
